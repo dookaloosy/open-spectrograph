@@ -1,0 +1,248 @@
+# Xia 2017 validation BOM — traditional Czerny-Turner spectrometer.
+#
+# Reproduces the optical system from:
+#   Xia et al., "Astigmatism-free Czerny-Turner compact spectrometer
+#   with cylindrical mirrors," Applied Optics 56(32), 9069-9073 (2017).
+#   Table 1 (optical parameters) and Table 2 (optimized layout).
+#
+# This is the TRADITIONAL CT (Fig 2a, Fig 3, Fig 5a) — spherical
+# collimator + spherical focuser + plane fold mirror.  The modified
+# CT (two cylindrical collimators) requires topology refactoring.
+#
+# Validation target: spot diagrams matching Fig 3, RMS > 100 um
+# (astigmatism-dominated) matching Fig 5a.
+#
+# Fictional mirror entries (XIA-M1, XIA-M2) — no Thorlabs part number.
+# focal_length_mm is the paraxial value R/2 (for correct mirror
+# curvature in the world builder).  Arm lengths L_a/L_b are set to
+# tangential focal lengths in the baseline TOML.
+
+geometry = "czerny"
+
+# ── Global manufacturing parameters ───────────────────────────────────────────
+
+[manufacturing]
+assembly_clearance_mm   = 0.1
+print_tolerance_mm      = 0.1
+fillet_radius_mm        = 2.0
+
+[manufacturing.bolts.M2]
+thread_dia_mm           = 2.0
+head_dia_mm             = 4.0
+clearance_dia_mm        = 2.4
+tap_drill_dia_mm        = 1.6
+
+[manufacturing.bolts."M2.5"]
+thread_dia_mm           = 2.5
+head_dia_mm             = 5.0
+clearance_dia_mm        = 2.7
+tap_drill_dia_mm        = 2.0
+
+[manufacturing.insert]
+insert_part             = "94459A110"
+insert_thread           = "M2"
+insert_bore_dia_mm      = 3.3
+insert_length_mm        = 2.5
+insert_min_material_mm  = 4.0
+insert_chamfer_mm       = 0.5
+insert_flange_dia_mm    = 3.6
+
+# ── Optics ─────────────────────────────────────────────────────────────────────
+
+# M1 = collimating mirror (Xia's M2).
+# R2 = 224 mm, f = R/2 = 112 mm, phi2 = 6.4 deg.
+
+[mirrors.m1_options.XIA-M1]
+# Xia M2 (collimating mirror): R = 224 mm, f = 112 mm, phi2 = 6.4 deg.
+# Fictional mirror — no vendor STEP. STEP export builds generic concave.
+# diameter_mm = f / f# = 112 / 5 = 22.4 (Xia's NA = 0.1 → f/5).
+focal_length_mm         = 112.0
+diameter_mm             = 22.4
+center_thickness_mm     = 6.0
+edge_thickness_mm       = 6.4
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 0.0
+mirror_type             = "spherical"
+off_axis_angle_deg      = 0.0
+
+[mirrors.m1_options.XIA-M1.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 12.7
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.80
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 8.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+# M2 = focusing mirror (Xia's M3).
+# R3 = 220 mm, f = R/2 = 110 mm, phi3 = 8.1 deg.
+# 50.8mm diameter — beam walk across 400nm bandwidth requires larger M2.
+
+[mirrors.m2_options.XIA-M2]
+# Xia M3 (focusing mirror): R = 220 mm, f = 110 mm, phi3 = 8.1 deg.
+# Fictional mirror — no vendor STEP. STEP export builds generic concave.
+# 50.8mm diameter to capture beam walk across 350-750nm band.
+focal_length_mm         = 110.0
+diameter_mm             = 50.8
+center_thickness_mm     = 9.0
+edge_thickness_mm       = 10.5
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 0.0
+mirror_type             = "spherical"
+off_axis_angle_deg      = 0.0
+
+[mirrors.m2_options.XIA-M2.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 25.4
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.80
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 18.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+# Grating: 600 g/mm (d = 1.667 um), blaze 500 nm.
+# Xia Table 1: D = 1.667 um, i = 5.2 deg, theta = 24.8 deg.
+
+[grating_options.GR25-0605]
+size_mm                 = 25.0
+edge_thickness_mm            = 6.0
+center_thickness_mm     = 6.0
+groove_density_per_mm   = 600.0
+blaze_nm                = 500.0
+blaze_angle_deg         = 8.627
+peak_efficiency         = 0.684
+type                    = "ruled_reflective"
+cost_usd                = 137.27
+efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
+
+[grating_options.GR25-0605.mount]
+type                    = "grating_flexure"
+jaw_clearance_mm        = 3.0
+contact_point_width_mm  = 2.0
+contact_point_height_mm = 1.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 4.00
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 8.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+# ── Slit ───────────────────────────────────────────────────────────────────────
+
+[slits]
+# Xia Section 3: slit width = 25 um.  Modelled as 25 um fiber.
+width_um                = 25.0
+height_mm               = 0.025
+blade_thickness_mm      = 0.0
+
+[slits.mount]
+type                    = "hasma_direct"
+length_mm               = 9.652
+bore_radius_mm          = 3.25
+hex_half_mm             = 4.6
+boundary_mm             = 3.873
+wall_half_mm            = 12.5
+
+[slits.entrance_options.HASMA]
+type                    = "fiber_adapter_sma"
+aperture_diameter_um    = 25.0
+adapter_length_mm       = 9.0
+cost_usd                = 10.04
+
+[slits.exit_options.HASMA]
+type                    = "fiber_adapter_sma"
+aperture_diameter_um    = 25.0
+adapter_length_mm       = 9.0
+cost_usd                = 10.04
+
+[source]
+type                    = "tungsten_halogen"
+
+# ── Housing ───────────────────────────────────────────────────────────────────
+
+[housing]
+wall_albedo             = 0.05
+
+# ── Detector ──────────────────────────────────────────────────────────────────
+
+[detector]
+# Xia uses TCD1304AP — same sensor family as our TCD1304DG.
+part_number             = "TCD1304AP"
+board                   = "TCD1304_SPI_Rev2EB"
+type                    = "linear_ccd"
+n_pixels                = 3648
+pixel_pitch_um          = 8.0
+pixel_height_um         = 200.0
+array_length_mm         = 29.184
+package_width_mm        = 41.6
+package_height_mm        = 10.16
+glass_to_die_mm         = 1.7
+board_width_mm          = 70.0
+board_height_mm          = 40.0
+board_behind_die_mm     = 21.5
+boundary_behind_die_mm  = 6.2
+insert_spacing_width_mm = 62.0
+insert_spacing_height_mm = 32.0
+solder_clearance_depth_mm = 3.0
+corner_boss_radius_mm   = 2.5
+fixed_grating           = true
+pixel_window            = 200
+
+# ── Fold mirrors ──────────────────────────────────────────────────────────────
+# Fictional entries — Xia's paper uses an additional plane mirror to fold
+# the entrance arm. Beam at F1 is ~2 mm (f/5 cone, l_SM1 ≈ 10.5 mm);
+# 6 mm diameter gives 3× margin.  F2 folds the exit arm; 12.7 mm clears
+# the dispersed beam comfortably.
+
+[mirrors.f1_options.XIA-F1]
+mirror_type             = "flat"
+diameter_mm             = 12.7
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 0.0
+
+[mirrors.f1_options.XIA-F1.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 6.35
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 4.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 3.5
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+

@@ -1,0 +1,1081 @@
+# OAP Czerny-Turner BOM — paraboloidal (off-axis parabolic) M1/M2, flat fold mirrors.
+# Derived from `czerny_spec.toml` — every field below should be
+# justifiable by pointing back at a spec field. See
+# `.kb/roadmap.md` ("Layer cake") for the discipline rules.
+#
+# Per-component structure:
+#   - M1, M2, and grating are GA-evolved between vendor options.
+#   - Entrance fiber adapter (HASMA) threads into housing wall.
+#   - Detector (TCD1304) sits at the exit focal plane.
+#
+# The `[mirrors.m1_options]` and `[grating_options]` tables list the
+# GA-evolved discrete choices; `[mirrors.m1]` and `[grating]` pick
+# the default/baseline from those tables.
+# `designs.czerny.load_parts()` instantiates a `CzernyParts` from
+# the baseline values; the GA runner rebuilds `CzernyParts` per
+# candidate by looking up the chosen option.
+#
+# Pricing: vendor retail USD, web-verified 2026-04-13 from the
+# live product pages. Re-check before any real purchase.
+
+geometry = "czerny"
+
+# ── Global manufacturing parameters ─────────────────────────────────────────
+# These apply to all flexure mount types. Per-mount BOM entries should
+# NOT repeat these; the code reads them from [manufacturing].
+
+[manufacturing]
+# Print / machining tolerances
+assembly_clearance_mm   = 0.1           # bore oversize for optic assembly fit
+print_tolerance_mm      = 0.1           # ± FDM/SLA dimensional tolerance
+fillet_radius_mm        = 2.0           # internal fillet radius (channel, tongue junction)
+
+# Metric bolt dimensions (ISO standard socket-head cap screws)
+[manufacturing.bolts.M2]
+thread_dia_mm           = 2.0           # nominal thread diameter
+head_dia_mm             = 4.0           # socket head cap screw head diameter
+clearance_dia_mm        = 2.4           # through-hole clearance diameter
+tap_drill_dia_mm        = 1.6           # tap drill diameter for threading
+
+[manufacturing.bolts."M2.5"]
+thread_dia_mm           = 2.5
+head_dia_mm             = 5.0
+clearance_dia_mm        = 2.7
+tap_drill_dia_mm        = 2.0
+
+# Heat-set insert: McMaster 94459A110, M2 × 0.4 brass, for plastics
+[manufacturing.insert]
+insert_part             = "94459A110"
+insert_thread           = "M2"
+insert_bore_dia_mm      = 3.3           # drill/print bore diameter (knurl press-fits in)
+insert_length_mm        = 2.5           # insert body length (flush with face when installed)
+insert_min_material_mm  = 4.0           # min surrounding wall thickness per spec
+insert_chamfer_mm       = 0.5           # snowplow relief chamfer at bore entry
+insert_flange_dia_mm    = 3.6           # insert flange outer diameter (for trim offset calc)
+
+# ── Optics ──────────────────────────────────────────────────────────────────
+
+[mirrors.m1_options.MPD029-G01]
+# Ø1/2" protected-aluminum 90° off-axis parabolic, RFL = 50.8 mm.
+focal_length_mm         = 50.8          # reflected focal length (RFL)
+diameter_mm             = 12.7          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 18.8          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 12.1          # back face to optical centre (chief-ray intersection)
+cost_usd                = 175.39        # vendor retail USD (2026-04)
+
+[mirrors.m1_options.MPD029-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 4.0           # MPD029 vendor bolt circle radius
+n_holes                 = 6             # hex pattern
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 3.3           # #4-40 through-hole diameter
+counterbore_dia_mm      = 5.5           # #4-40 flat-head countersink major diameter
+screw_part              = "91771A108"   # #4-40 × 3/8" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 4.00          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 5.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+[mirrors.m1_options.MPD129-G01]
+# Ø1" protected-aluminum 90° off-axis parabolic, RFL = 50.8 mm.
+# Eliminates spherical aberration and coma at the design reflection
+# angle (90° OAP).
+focal_length_mm         = 50.8          # reflected focal length (RFL)
+diameter_mm             = 25.4          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 31.7          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 17.4          # back face to optical centre (chief-ray intersection)
+cost_usd                = 208.47        # vendor retail USD (2026-04)
+
+[mirrors.m1_options.MPD129-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention (6-hole hex bolt pattern) --
+bolt_circle_radius_mm   = 9.525         # MPD vendor bolt circle radius
+n_holes                 = 6             # hex pattern (covers both M1/M2 orientations)
+hole_phase_deg          = 30.0          # angular offset of first hole from 0°
+clearance_hole_dia_mm   = 3.3           # #4-40 through-hole diameter
+counterbore_dia_mm      = 5.5           # #4-40 flat-head countersink major diameter
+screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[mirrors.m1_options.MPD149-G01]
+# Ø1" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
+focal_length_mm         = 101.6         # reflected focal length (RFL)
+diameter_mm             = 25.4          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 31.7          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 18.2          # back face to optical centre (chief-ray intersection)
+cost_usd                = 208.47        # vendor retail USD (2026-04)
+
+[mirrors.m1_options.MPD149-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 9.525         # MPD vendor bolt circle radius
+n_holes                 = 6             # hex pattern (covers both M1/M2 orientations)
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 3.3           # through-hole diameter
+counterbore_dia_mm      = 5.5           # flat-head countersink major diameter
+screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[mirrors.m1_options.MPD249-G01]
+# Ø2" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
+focal_length_mm         = 101.6         # reflected focal length (RFL)
+diameter_mm             = 50.8          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 62.8          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 34.2          # back face to optical centre (chief-ray intersection)
+cost_usd                = 311.42        # vendor retail USD (2026-04)
+
+[mirrors.m1_options.MPD249-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 15.9          # MPD249 vendor bolt circle radius
+n_holes                 = 6             # hex pattern
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 4.5           # #8-32 through-hole diameter
+counterbore_dia_mm      = 8.0           # #8-32 flat-head countersink major diameter
+screw_part              = "91771A194"   # #8-32 × 1/2" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 3.40          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 32.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+# ── Cylindrical mirrors (CCM254 series) ──────────────────────────────────────
+# Concave cylindrical: curvature in one axis only. Used in modified CT
+# to independently correct tangential/sagittal astigmatism.
+# Same 25.4mm diameter and 6mm center thickness as CM254 sphericals.
+
+[mirrors.m2_options.MPD029-G01]
+# Ø1/2" protected-aluminum 90° off-axis parabolic, RFL = 50.8 mm.
+focal_length_mm         = 50.8          # reflected focal length (RFL)
+diameter_mm             = 12.7          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 18.8          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 12.1          # back face to optical centre (chief-ray intersection)
+cost_usd                = 175.39        # vendor retail USD (2026-04)
+
+[mirrors.m2_options.MPD029-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 4.0           # MPD029 vendor bolt circle radius
+n_holes                 = 6             # hex pattern
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 3.3           # #4-40 through-hole diameter
+counterbore_dia_mm      = 5.5           # #4-40 flat-head countersink major diameter
+screw_part              = "91771A108"   # #4-40 × 3/8" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 4.00          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 5.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+[mirrors.m2_options.MPD129-G01]
+# Ø1" protected-aluminum 90° off-axis parabolic, RFL = 50.8 mm.
+focal_length_mm         = 50.8          # reflected focal length (RFL)
+diameter_mm             = 25.4          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 31.7          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 17.4          # back face to optical centre (chief-ray intersection)
+cost_usd                = 208.47        # vendor retail USD (2026-04)
+
+[mirrors.m2_options.MPD129-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 9.525         # MPD vendor bolt circle radius
+n_holes                 = 6             # hex pattern (covers both M1/M2 orientations)
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 3.3           # through-hole diameter
+counterbore_dia_mm      = 5.5           # flat-head countersink major diameter
+screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[mirrors.m2_options.MPD149-G01]
+# Ø1" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
+focal_length_mm         = 101.6         # reflected focal length (RFL)
+diameter_mm             = 25.4          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 31.7          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 18.2          # back face to optical centre (chief-ray intersection)
+cost_usd                = 208.47        # vendor retail USD (2026-04)
+
+[mirrors.m2_options.MPD149-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 9.525         # MPD vendor bolt circle radius
+n_holes                 = 6             # hex pattern (covers both M1/M2 orientations)
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 3.3           # through-hole diameter
+counterbore_dia_mm      = 5.5           # flat-head countersink major diameter
+screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[mirrors.m2_options.MPD249-G01]
+# Ø2" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
+focal_length_mm         = 101.6         # reflected focal length (RFL)
+diameter_mm             = 50.8          # cylinder diameter
+reflectance             = 0.90          # scalar reflectance (Al, 12° AOI)
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+edge_thickness_mm            = 62.8          # cylinder height (for raysect CSG)
+mirror_type             = "paraboloidal"# spherical or paraboloidal
+off_axis_angle_deg      = 90.0          # vendor convention (incidence = OAA/2)
+center_thickness_mm     = 34.2          # back face to optical centre (chief-ray intersection)
+cost_usd                = 311.42        # vendor retail USD (2026-04)
+
+[mirrors.m2_options.MPD249-G01.mount]
+type                    = "oap_flexure"
+# -- optic retention --
+bolt_circle_radius_mm   = 15.9          # MPD249 vendor bolt circle radius
+n_holes                 = 6             # hex pattern
+hole_phase_deg          = 30.0          # angular offset of first hole from 0 deg
+clearance_hole_dia_mm   = 4.5           # #8-32 through-hole diameter
+counterbore_dia_mm      = 8.0           # #8-32 flat-head countersink major diameter
+screw_part              = "91771A194"   # #8-32 × 1/2" Phillips flat head screw
+# -- slab geometry --
+slab_thickness_mm       = 6.0           # total slab depth in u direction
+head_clearance_mm       = 5.0           # material above optic centre to top face
+foot_clearance_mm       = 3.40          # material below optic centre to slab bottom
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 32.0          # tongue bolt u-offset (past COM for anti-topple)
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR25-1205]
+# 25 × 25 mm — current default. Relaxes the clipping constraint,
+# enables higher-α+β geometries (blaze-peak-at-550nm region).
+size_mm                 = 25.0          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 500.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 17.457        # Littrow blaze angle
+peak_efficiency         = 0.768         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 137.27        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-1205.csv"
+
+[grating_options.GR25-1205.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR25-1208]
+# 25 × 25 mm, 1200 g/mm, blaze 750 nm. 25 × 25 mm
+# but a different blaze angle — peak efficiency sits in the red
+# (600–800 nm) with ~40–55% at 400 nm. Use when the application is
+# NIR-weighted (fluorescence of green-red dyes, long-wavelength
+# absorption bands) rather than broadband-visible. Same price as the
+# -1205 variant; BOM's choice is driven purely by application.
+size_mm                 = 25.0          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 750.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 26.74         # Littrow blaze angle
+peak_efficiency         = 0.706         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 137.27        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-1208.csv"
+
+[grating_options.GR25-1208.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR25-1210]
+# 25 × 25 mm, 1200 g/mm, blaze 1000 nm. NIR-dominant blaze — peak
+# efficiency sits at 1 μm, rolling off sharply toward the visible
+# (~30% at 550 nm). Use when the application is near-IR-weighted:
+# silicon-detector astronomy, LED-phosphor diagnostics, NIR
+# fluorescence. First-order Littrow angle ≈ 36.87°. Blaze optimized for NIR.
+# BOM choice driven by application.
+size_mm                 = 25.0          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 1000.0        # blaze wavelength in air (1st order)
+blaze_angle_deg         = 36.87         # Littrow blaze angle
+peak_efficiency         = 0.682         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 137.27        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-1210.csv"
+
+[grating_options.GR25-1210.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR13-1205]
+# 12.7 × 12.7 mm, 1200 g/mm, blaze 500 nm. Miniature ruled grating
+# for the 12.7 mm optics classes. 12.7 mm version of the 1200 g/mm blaze-500 grating. vendor GR13-1205.
+size_mm                 = 12.7          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 500.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 17.457        # Littrow blaze angle
+peak_efficiency         = 0.768         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 104.04        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-1205.csv"
+
+[grating_options.GR13-1205.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR13-1208]
+# 12.7 × 12.7 mm, 1200 g/mm, blaze 750 nm. 12.7 mm version, blaze 750 nm.
+# smaller substrate. vendor GR13-1208.
+size_mm                 = 12.7          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 750.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 26.74         # Littrow blaze angle
+peak_efficiency         = 0.706         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 104.04        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-1208.csv"
+
+[grating_options.GR13-1208.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR13-1210]
+# 12.7 × 12.7 mm, 1200 g/mm, blaze 1000 nm. 12.7 mm version, blaze 1000 nm.
+# smaller substrate. vendor GR13-1210.
+size_mm                 = 12.7          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 1000.0        # blaze wavelength in air (1st order)
+blaze_angle_deg         = 36.87         # Littrow blaze angle
+peak_efficiency         = 0.682         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 104.04        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-1210.csv"
+
+[grating_options.GR13-1210.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR13-0605]
+# 12.7 × 12.7 mm, 600 g/mm, blaze 500 nm. Low-dispersion miniature
+# grating — halves spectral resolution vs 1200 lpm but doubles
+# wavelength range. 600 g/mm blaze-500 on 12.7 mm substrate.
+size_mm                 = 12.7          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 600.0         # grooves per millimetre
+blaze_nm                = 500.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 8.627         # Littrow blaze angle
+peak_efficiency         = 0.684         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 83.58         # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
+
+[grating_options.GR13-0605.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR25-0605]
+# 25 × 25 mm, 600 g/mm, blaze 500 nm. Low-dispersion standard
+# grating. 600 g/mm blaze-500 on 25 mm substrate.
+size_mm                 = 25.0          # ruled area side length (square)
+edge_thickness_mm            = 6.0           # substrate thickness
+center_thickness_mm     = 6.0          # back face to optical centre
+groove_density_per_mm   = 600.0         # grooves per millimetre
+blaze_nm                = 500.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 8.627         # Littrow blaze angle
+peak_efficiency         = 0.684         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 137.27        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
+
+[grating_options.GR25-0605.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GR50A-0605]
+# 50 × 50 mm, 600 g/mm, blaze 500 nm. Low-dispersion large-aperture
+# grating. Different efficiency profile from the GR13/GR25 600 lpm
+# (higher peak at 450 nm, steeper rolloff in red, second-order bump
+# at ~1200 nm).
+size_mm                 = 50.0          # ruled area side length (square)
+edge_thickness_mm            = 9.5           # substrate thickness
+center_thickness_mm     = 9.5          # back face to optical centre
+groove_density_per_mm   = 600.0         # grooves per millimetre
+blaze_nm                = 500.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 8.627         # Littrow blaze angle
+peak_efficiency         = 0.857         # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 265.18        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GR50A-0605.csv"
+
+[grating_options.GR50A-0605.mount]
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 3.40          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.GH50-12V]
+# 50 × 50 mm visible holographic grating, 1200 g/mm. No blaze
+# (sinusoidal groove profile → no blaze angle). Peak efficiency ~76%
+# near 500 nm (average polarisation); lower than ruled gratings at
+# peak but the 50 mm aperture captures the full CM508-100 beam
+# without overfill. Holographic gratings also have lower stray light
+# and no Rowland ghosts — a practical advantage for the housing-less
+# stage-(a) instrument.
+size_mm                 = 50.0          # ruled area side length (square)
+edge_thickness_mm            = 9.5           # substrate thickness
+center_thickness_mm     = 9.5          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 500.0         # nominal centre wavelength (no true blaze)
+blaze_angle_deg         = 0.0           # 0 for holographic (sinusoidal profile)
+peak_efficiency         = 0.76          # peak scalar diffraction efficiency
+type                    = "holographic" # grating type
+cost_usd                = 391.48        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_GH50-12V.csv"
+
+[grating_options.GH50-12V.mount]
+# Larger grating → scaled-up L-mount. Plate thickness stays 6 mm
+# (substrate is 9.5 mm, thicker than 25 mm gratings' 6 mm).
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 3.40          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[grating_options.EO43-006]
+# 50 × 50 mm ruled reflective grating, 1200 g/mm, blaze 500 nm.
+# Edmund Optics #43-006. Same groove density and blaze wavelength as
+# GR25-1205 but on a 50 mm substrate — captures the full CM508-100
+# beam without overfill. Ruled (not holographic) so it retains the
+# peaked blaze efficiency of the vendor 25 mm variant. Cheaper than
+# the GH50-12V holographic at $295 vs $391, with higher peak
+# efficiency (~74% vs ~63%).
+size_mm                 = 50.0          # ruled area side length (square)
+edge_thickness_mm            = 9.5           # substrate thickness
+center_thickness_mm     = 9.5          # back face to optical centre
+groove_density_per_mm   = 1200.0        # grooves per millimetre
+blaze_nm                = 500.0         # blaze wavelength in air (1st order)
+blaze_angle_deg         = 17.457        # Littrow blaze angle
+peak_efficiency         = 0.71          # peak scalar diffraction efficiency
+type                    = "ruled_reflective" # grating type
+cost_usd                = 295.00        # vendor retail USD (2026-04)
+efficiency_file         = "data/efficiency/efficiency_EO43-006.csv"
+
+[grating_options.EO43-006.mount]
+# 50 mm substrate, ruled.
+type                    = "grating_flexure"
+# -- optic retention --
+jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
+contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
+contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+# -- slab geometry --
+head_clearance_mm       = 5.0           # material above grating edge to top face
+foot_clearance_mm       = 3.40          # material below grating edge to slab bottom
+rear_wall_mm            = 3.0           # material behind grating to back face
+# -- foot geometry --
+foot_thickness_mm       = 5.0           # foot slab thickness in w direction
+foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
+front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
+# -- flexure --
+flexure_thickness_mm    = 0.80          # web thickness in u
+flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+
+[slits]
+# Both entrance and exit apertures are bare multimode SMA fibers
+# mounted in HASMA bulkhead adapters. The fiber core diameter defines
+# the aperture — no separate slit blade.
+#   width_um  = fiber core diameter (dispersion direction)
+#   height_mm = fiber core diameter (spatial direction)
+# A circular 400 μm core is modelled as a 0.4 mm × 0.4 mm square
+# emitter (area differs by π/4; bandpass depends only on width).
+width_um                = 400.0
+height_mm               = 0.4
+blade_thickness_mm      = 0.0
+
+# No separate slit mount — the HASMA threads into the housing wall.
+# Four fundamental dimensions; everything else is derived.
+[slits.mount]
+type                    = "hasma_direct"
+length_mm               = 9.652         # full adapter, slit plane to far end
+bore_radius_mm          = 3.25          # SMA thread bore half-diameter
+hex_half_mm             = 4.6           # hex nut half across-flats (widest = 9.2mm)
+boundary_mm             = 3.873         # slit plane to hex nut inner face
+wall_half_mm            = 12.5          # half-width of minimum housing wall section
+
+[slits.entrance_options.HASMA]
+type                    = "fiber_adapter_sma"
+aperture_diameter_um    = 400.0
+adapter_length_mm       = 9.0
+cost_usd                = 10.04
+
+[slits.exit_options.HASMA]
+type                    = "fiber_adapter_sma"
+aperture_diameter_um    = 400.0
+adapter_length_mm       = 9.0
+cost_usd                = 10.04
+
+[source]
+# Placeholder — a broadband visible source.
+type                    = "tungsten_halogen"
+
+[housing]
+# Interior wall finish. Matte-black anodize or flocking; albedo is the
+# total hemispherical reflectance (fraction of incident power scattered
+# back into the housing interior). Typical values:
+#   raw aluminum     ~0.90
+#   matte black paint ~0.05
+#   Acktar flock      ~0.01
+# BOM-forced — the GA doesn't get to choose the paint.
+wall_albedo             = 0.05
+
+[detector]
+part_number             = "TCD1304DG"
+board                   = "TCD1304_SPI_Rev2EB"
+type                    = "linear_ccd"
+n_pixels                = 3648
+pixel_pitch_um          = 8.0
+pixel_height_um         = 200.0
+array_length_mm         = 29.184    # 3648 × 8 µm
+package_width_mm        = 41.6      # CDIP-22 body length
+package_height_mm        = 10.16     # CDIP-22 body width
+glass_to_die_mm         = 1.7       # datasheet: front glass to active surface
+board_width_mm          = 70.0      # SPI Rev2EB PCB
+board_height_mm          = 40.0      # SPI Rev2EB PCB
+board_behind_die_mm     = 21.5      # total extent behind die (PCB + IDC + trimpot)
+boundary_behind_die_mm  = 6.2       # die to PCB bottom plane (housing wall boundary)
+insert_spacing_width_mm = 62.0
+insert_spacing_height_mm = 32.0
+solder_clearance_depth_mm = 3.0
+corner_boss_radius_mm   = 2.5
+fixed_grating           = true      # linear CCD array: grating fixed at design angle.
+                                    # single-pixel detector (e.g. exit fiber) sets false.
+pixel_window            = 200       # ±pixels around each fitness wavelength for CCD
+                                    # backward trace (winner only). 200 px = ±1.6 mm,
+                                    # covers ~3.2 mm ILF base at worst-case band edges.
+
+[controller]
+board                   = "Controller_T4_R3EB"
+board_width_mm          = 72.0
+board_height_mm         = 55.0
+board_thickness_mm      = 1.6
+component_height_mm     = 12.8
+solder_protrusion_mm    = 3.0
+insert_spacing_width_mm = 64.0
+insert_spacing_height_mm = 47.0
+solder_clearance_depth_mm = 3.0
+corner_boss_radius_mm   = 2.5
+
+[mirrors.f1_options.PF05-03-G01]
+# Ø1/2" (12.7mm) protected-Al flat, 6mm thick. Smallest fold —
+# matched to 12.7mm curved mirrors (miniature-medium). Projected
+# aperture at 45° is 4.49mm, which catches beams from a 12.7mm
+# mirror once fraction ≥ 0.38, leaving ~[0.38, 0.80] of usable
+# band. Plate radius 7.35mm keeps the slit bulkhead clear on
+# f=50mm arms.
+mirror_type             = "flat"
+diameter_mm             = 12.7
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 42.60
+
+[mirrors.f1_options.PF05-03-G01.mount]
+# Same mirror_flexure as CM127 (12.7mm spherical), scaled for 6mm-thick flat.
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 6.35
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 4.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 3.5
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f1_options.PF07-03-G01]
+# Ø3/4" (19.05mm) protected-Al flat, 6mm thick. Matched to 25.4mm
+# curved mirrors (miniature-fast, compact-medium, standard-slow).
+# Projected aperture at 45° is 6.74mm; feasible band on f=50mm
+# arms is ~[0.53, 0.73], on f=100/200mm arms ~[0.53, 0.86-0.93].
+mirror_type             = "flat"
+diameter_mm             = 19.05
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 57.21
+
+[mirrors.f1_options.PF07-03-G01.mount]
+# Same mirror_flexure as curved mirrors, scaled for 19.05mm Ø × 6mm flat.
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 9.525
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.9
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 7.5
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f1_options.PF10-03-G01]
+# Ø1" (25.4mm) protected-Al flat, 6mm thick. Matched to 50.8mm
+# curved mirrors (compact-fast, standard-medium). Projected
+# aperture at 45° is 8.98mm; PF07 cannot catch 50.8mm-mirror beams
+# until fraction ≥ 0.78 (width 0.08), whereas PF10 opens the band
+# to [0.69, 0.83-0.91]. Slightly larger plate footprint (14.7mm
+# radius) drops the slit-side upper bound vs PF07, but the arm is
+# long enough in these classes to absorb the loss.
+mirror_type             = "flat"
+diameter_mm             = 25.4
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 60.20
+
+[mirrors.f1_options.PF10-03-G01.mount]
+# Same mirror_flexure as CM254 (25.4mm spherical), scaled for 6mm-thick flat.
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 12.7
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.8
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 8.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f1_options.PF20-03-G01]
+# Ø2" (50.8mm) protected-Al flat, 12mm thick.
+mirror_type             = "flat"
+diameter_mm             = 50.8
+edge_thickness_mm       = 12.0
+center_thickness_mm     = 12.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 115.68
+
+[mirrors.f1_options.PF20-03-G01.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 25.4
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 20.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f2_options.PF05-03-G01]
+mirror_type             = "flat"
+diameter_mm             = 12.7
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 42.60
+
+[mirrors.f2_options.PF05-03-G01.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 6.35
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 4.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 3.5
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f2_options.PF07-03-G01]
+mirror_type             = "flat"
+diameter_mm             = 19.05
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 57.21
+
+[mirrors.f2_options.PF07-03-G01.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 9.525
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.9
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 7.5
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f2_options.PF10-03-G01]
+mirror_type             = "flat"
+diameter_mm             = 25.4
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 60.20
+
+[mirrors.f2_options.PF10-03-G01.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 12.7
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.8
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 8.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+
+[mirrors.f2_options.PF20-03-G01]
+mirror_type             = "flat"
+diameter_mm             = 50.8
+edge_thickness_mm       = 12.0
+center_thickness_mm     = 12.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 115.68
+
+[mirrors.f2_options.PF20-03-G01.mount]
+type                    = "mirror_flexure"
+shoulder_width_mm       = 1.0
+channel_width_mm        = 25.4
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 5.0
+foot_clearance_mm       = 3.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2.5"
+foot_bolt_spacing_mm    = 20.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 8.0
+flexure_thickness_mm    = 0.80
+flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+

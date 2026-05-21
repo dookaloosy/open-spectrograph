@@ -1,0 +1,34 @@
+# EO43-006: 1200 g/mm, blaze 500 nm, 50x50mm ruled reflective
+# Digitised from Edmund Optics product-page chart (average polarisation).
+# Source: https://productimages.edmundoptics.com/3415.gif
+# Curve: "1200 grooves/mm @ 500 nm" (dark blue), Littrow mount, Al coating.
+wavelength_nm,efficiency
+250,0.09
+300,0.26
+350,0.33
+400,0.51
+450,0.65
+500,0.71
+550,0.69
+600,0.63
+650,0.50
+700,0.58
+750,0.52
+800,0.45
+850,0.42
+900,0.40
+950,0.40
+1000,0.38
+1050,0.36
+1100,0.35
+1150,0.34
+1200,0.34
+1250,0.34
+1300,0.34
+1350,0.35
+1400,0.36
+1450,0.38
+1500,0.40
+1550,0.44
+1600,0.48
+1650,0.44

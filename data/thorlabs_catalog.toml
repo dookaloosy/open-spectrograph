@@ -1,0 +1,346 @@
+# Thorlabs concave mirror catalog, protected aluminum (-G01) variants.
+# Same mechanical dimensions apply to -F01 (UV Al), -P01 (Ag), -M01 (Au).
+# Source: https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=143
+# Retrieved: 2026-05-10
+#
+# All mirrors: λ/4 surface irregularity @ 633nm (≤λ/4 for f≥250mm).
+# Coating: protected aluminum, 450 nm – 20 µm.
+
+# ── Ø1/2" (12.7 mm) ──────────────────────────────────────────────────────────
+
+[CM127-010-G01]
+focal_length_mm     = 9.5
+diameter_mm         = 12.7
+center_thickness_mm = 3.0
+edge_thickness_mm   = 4.0
+radius_of_curvature_mm = 19.0
+thickness_tolerance_mm = 0.2
+
+[CM127-012-G01]
+focal_length_mm     = 12.0
+diameter_mm         = 12.7
+center_thickness_mm = 3.0
+edge_thickness_mm   = 3.8
+radius_of_curvature_mm = 24.0
+thickness_tolerance_mm = 0.2
+
+[CM127-025-G01]
+focal_length_mm     = 25.0
+diameter_mm         = 12.7
+center_thickness_mm = 3.0
+edge_thickness_mm   = 3.4
+radius_of_curvature_mm = 50.0
+thickness_tolerance_mm = 0.2
+
+[CM127-050-G01]
+focal_length_mm     = 50.0
+diameter_mm         = 12.7
+center_thickness_mm = 3.0
+edge_thickness_mm   = 3.2
+radius_of_curvature_mm = 100.0
+thickness_tolerance_mm = 0.2
+
+# ── Ø1" (25.4 mm) ────────────────────────────────────────────────────────────
+
+[CM254-019-G01]
+focal_length_mm     = 19.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 8.1
+radius_of_curvature_mm = 38.0
+thickness_tolerance_mm = 0.2
+
+[CM254-025-G01]
+focal_length_mm     = 25.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 7.6
+radius_of_curvature_mm = 50.0
+thickness_tolerance_mm = 0.2
+
+[CM254-050-G01]
+focal_length_mm     = 50.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.8
+radius_of_curvature_mm = 100.0
+thickness_tolerance_mm = 0.2
+
+[CM254-075-G01]
+focal_length_mm     = 75.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.5
+radius_of_curvature_mm = 150.0
+thickness_tolerance_mm = 0.2
+
+[CM254-100-G01]
+focal_length_mm     = 100.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.4
+radius_of_curvature_mm = 200.0
+thickness_tolerance_mm = 0.2
+
+[CM254-150-G01]
+focal_length_mm     = 150.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.3
+radius_of_curvature_mm = 300.0
+thickness_tolerance_mm = 0.2
+
+[CM254-200-G01]
+focal_length_mm     = 200.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.2
+radius_of_curvature_mm = 400.0
+thickness_tolerance_mm = 0.2
+
+[CM254-250-G01]
+focal_length_mm     = 250.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.2
+radius_of_curvature_mm = 500.0
+thickness_tolerance_mm = 0.1
+
+[CM254-500-G01]
+focal_length_mm     = 500.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.1
+radius_of_curvature_mm = 1000.0
+thickness_tolerance_mm = 0.1
+
+[CM254-750-G01]
+focal_length_mm     = 750.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.1
+radius_of_curvature_mm = 1500.0
+thickness_tolerance_mm = 0.1
+
+[CM254-1000-G01]
+focal_length_mm     = 1000.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.0
+radius_of_curvature_mm = 2000.0
+thickness_tolerance_mm = 0.1
+
+# ── Ø2" (50.8 mm) ────────────────────────────────────────────────────────────
+
+[CM508-038-G01]
+focal_length_mm     = 38.1
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 13.3
+radius_of_curvature_mm = 76.2
+thickness_tolerance_mm = 0.2
+
+[CM508-050-G01]
+focal_length_mm     = 50.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 12.2
+radius_of_curvature_mm = 100.0
+thickness_tolerance_mm = 0.2
+
+[CM508-100-G01]
+focal_length_mm     = 100.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 10.6
+radius_of_curvature_mm = 200.0
+thickness_tolerance_mm = 0.2
+
+[CM508-150-G01]
+focal_length_mm     = 150.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 10.1
+radius_of_curvature_mm = 300.0
+thickness_tolerance_mm = 0.2
+
+[CM508-200-G01]
+focal_length_mm     = 200.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 9.8
+radius_of_curvature_mm = 400.0
+thickness_tolerance_mm = 0.2
+
+[CM508-500-G01]
+focal_length_mm     = 500.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 9.3
+radius_of_curvature_mm = 1000.0
+thickness_tolerance_mm = 0.2
+
+[CM508-750-G01]
+focal_length_mm     = 750.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 9.2
+radius_of_curvature_mm = 1500.0
+thickness_tolerance_mm = 0.1
+
+[CM508-1000-G01]
+focal_length_mm     = 1000.0
+diameter_mm         = 50.8
+center_thickness_mm = 9.0
+edge_thickness_mm   = 9.2
+radius_of_curvature_mm = 2000.0
+thickness_tolerance_mm = 0.1
+
+# ── Ø75 mm ───────────────────────────────────────────────────────────────────
+
+[CM750-056-G01]
+focal_length_mm     = 56.25
+diameter_mm         = 75.0
+center_thickness_mm = 12.0
+edge_thickness_mm   = 18.4
+radius_of_curvature_mm = 112.5
+thickness_tolerance_mm = 0.2
+
+[CM750-075-G01]
+focal_length_mm     = 75.0
+diameter_mm         = 75.0
+center_thickness_mm = 12.0
+edge_thickness_mm   = 16.7
+radius_of_curvature_mm = 150.0
+thickness_tolerance_mm = 0.2
+
+[CM750-150-G01]
+focal_length_mm     = 150.0
+diameter_mm         = 75.0
+center_thickness_mm = 12.0
+edge_thickness_mm   = 14.3
+radius_of_curvature_mm = 300.0
+thickness_tolerance_mm = 0.2
+
+[CM750-200-G01]
+focal_length_mm     = 200.0
+diameter_mm         = 75.0
+center_thickness_mm = 12.0
+edge_thickness_mm   = 13.7
+radius_of_curvature_mm = 400.0
+thickness_tolerance_mm = 0.2
+
+[CM750-500-G01]
+focal_length_mm     = 500.0
+diameter_mm         = 75.0
+center_thickness_mm = 12.0
+edge_thickness_mm   = 12.7
+radius_of_curvature_mm = 1000.0
+thickness_tolerance_mm = 0.2
+
+# ── Ø1" Concave Cylindrical (CCM254) ─────────────────────────────────────────
+# Source: https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=4054
+# Curvature in one axis only. Same 25.4mm diameter as CM254 sphericals.
+
+[CCM254-025-G01]
+focal_length_mm     = 25.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 7.6
+radius_of_curvature_mm = 50.0
+thickness_tolerance_mm = 0.2
+mirror_type         = "cylindrical"
+
+[CCM254-050-G01]
+focal_length_mm     = 50.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.8
+radius_of_curvature_mm = 100.0
+thickness_tolerance_mm = 0.2
+mirror_type         = "cylindrical"
+
+[CCM254-100-G01]
+focal_length_mm     = 100.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.4
+radius_of_curvature_mm = 200.0
+thickness_tolerance_mm = 0.2
+mirror_type         = "cylindrical"
+
+[CCM254-200-G01]
+focal_length_mm     = 200.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.2
+radius_of_curvature_mm = 400.0
+thickness_tolerance_mm = 0.2
+mirror_type         = "cylindrical"
+
+[CCM254-400-G01]
+focal_length_mm     = 400.0
+diameter_mm         = 25.4
+center_thickness_mm = 6.0
+edge_thickness_mm   = 6.1
+radius_of_curvature_mm = 800.0
+thickness_tolerance_mm = 0.2
+mirror_type         = "cylindrical"
+
+# ── Off-Axis Parabolic Mirrors (MPD series) ──────────────────────────────────
+# Source: https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=7078
+# Substrate: aluminum. Coating: protected aluminum.
+# Reflected focal length (RFL) and off-axis angle vary by series.
+
+[MPD029-G01]
+focal_length_mm     = 50.8
+diameter_mm         = 12.7
+center_thickness_mm = 12.1
+off_axis_angle_deg  = 90.0
+mirror_type         = "paraboloidal"
+
+[MPD129-G01]
+focal_length_mm     = 50.8
+diameter_mm         = 25.4
+center_thickness_mm = 17.4
+off_axis_angle_deg  = 90.0
+mirror_type         = "paraboloidal"
+
+[MPD149-G01]
+focal_length_mm     = 101.6
+diameter_mm         = 25.4
+center_thickness_mm = 18.2
+off_axis_angle_deg  = 90.0
+mirror_type         = "paraboloidal"
+
+[MPD249-G01]
+focal_length_mm     = 101.6
+diameter_mm         = 50.8
+center_thickness_mm = 34.2
+off_axis_angle_deg  = 90.0
+mirror_type         = "paraboloidal"
+
+# ── Round Protected Aluminum Flat Mirrors (PF series) ─────────────────────────
+# Source: https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=903
+# Substrate: fused silica. Flatness: λ/10 @ 633nm. Parallelism: <3 arcmin.
+# Ravg > 90% from 450nm–2µm, > 95% from 2–20µm.
+
+[PF05-03-G01]
+diameter_mm         = 12.7
+thickness_mm        = 6.0
+thickness_tolerance_mm = 0.2
+
+[PF07-03-G01]
+diameter_mm         = 19.0
+thickness_mm        = 6.0
+thickness_tolerance_mm = 0.2
+
+[PF10-03-G01]
+diameter_mm         = 25.4
+thickness_mm        = 6.0
+thickness_tolerance_mm = 0.2
+
+[PF20-03-G01]
+diameter_mm         = 50.8
+thickness_mm        = 12.0
+thickness_tolerance_mm = 0.2

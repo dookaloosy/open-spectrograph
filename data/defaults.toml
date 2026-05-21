@@ -1,0 +1,28 @@
+# Default parameters for run_optimizer.py.
+# CLI flags override any value here.
+
+[sweep]
+forward_rays = 5_000
+coarse_forward_rays = 1_000
+grid_resolution = 1.0
+acceptance_threshold = 0.005
+
+[sweep.grid]
+# Min coarse points per swept axis.  CLI: --target_coarse_pts.
+target_coarse_pts = 8
+
+[optimizer]
+pop_size = 8
+max_generations = 20
+max_footprint_mm = [300.0, 200.0, 80.0]
+n_basins = 1
+
+[optimizer.fold]
+# none / F1 / F2 / both.  CLI --fold_mode overrides.
+mode = "none"
+
+[optimizer.ranges]
+theta_m1_range = [5.0, 15.0]
+Dv_range = [20.0, 60.0]
+theta_d_range = [-10.0, 10.0]
+theta_f_range = [5.0, 45.0]

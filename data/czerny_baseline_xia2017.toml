@@ -1,0 +1,45 @@
+# Xia 2017 traditional CT baseline genome.
+#
+# Reproduces the Zemax-optimized layout from Table 2.
+# L_a and L_b are tangential focal lengths (NOT paraxial R/2)
+# to match the slit and detector placement.  The BOM mirrors use
+# paraxial focal_length_mm = R/2 for correct mirror curvature.
+#
+# Xia distances (Table 2, optimized):
+#   l_SM1    = 10.526 mm   (slit to fold mirror)
+#   l_M1M2   = 100.776 mm  (fold to collimator)
+#   l_M3D    = 108.751 mm  (focuser to detector)
+#
+# L_a = R2*cos(phi2)/2 = 224*cos(6.4°)/2 = 111.30 mm
+# L_b = l_M3D = 108.751 mm (Zemax-optimized)
+# L_f1 = L_a - l_SM1 = 111.30 - 10.526 = 100.774 mm
+# theta_f1 = phi1 = 18 deg (incidence angle at fold mirror)
+# L_m1 = L_m2 = 110 mm (free; beam is collimated at grating)
+
+# ── Run parameters ───────────────────────────────────────────────────
+bom_path         = "data/czerny_bom_xia2017_corrected.toml"
+center_nm        = 550.0
+min_bw_nm        = 400.0
+max_rld          = 17.0
+max_fnum         = 5.0
+fold_mode        = "F1"
+point_source     = true
+
+# ── Part selections ──────────────────────────────────────────────────
+m1_part          = "XIA-M1-CYL"
+m2_part          = "XIA-M2"
+grating_part     = "GR25-0605"
+f1_part          = "XIA-F1-CYL"
+
+# ── Genome parameters ────────────────────────────────────────────────
+L_a_mm              = 111.30
+L_b_mm              = 108.751
+alpha_deg          = 5.2
+beta_deg           = -24.8
+theta_m1_deg         = 6.4
+theta_m2_deg         = 8.1
+L_m1_mm            = 110.0
+L_m2_mm            = 110.0
+theta_d_deg  = 3.5
+L_f1_mm        = 100.774
+theta_f1_deg   = 18.0

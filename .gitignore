@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Editors / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime output
+output/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+version.tex
+
+# Reference papers (copyrighted, local only)
+references/
+
+# Local working knowledge base (scratch workspace)
+.kb/
+
+# Third-party STEP files (not redistributable)
+data/step/
+
+# Vendor images/data (copyrighted, not redistributable)
+data/efficiency/*.gif
+data/efficiency/*.jpg
+data/efficiency/*.xlsx
+
+# Claude Code
+.claude/

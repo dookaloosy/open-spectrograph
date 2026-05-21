@@ -1,0 +1,12 @@
+# Design targets for the Czerny-Turner spectrograph.
+#
+# Performance goals the optimizer chases and the BOM filter uses to
+# qualify parts.  Every value here is Layer 1 (human-authored intent)
+# — changing a target is a redesign, not a tweak.
+#
+# CLI flags (--max_rld, --min_bw, --max_fnum, --center) override these per-run.
+
+center_nm           = 550.0     # grating lock point
+min_bw_nm           = 400.0     # minimum usable bandwidth (nm)
+max_rld_nm_per_mm   = 8.0       # maximum reciprocal linear dispersion (nm/mm)
+max_fnum            = 2.3       # maximum f-number, slowest acceptable (D_M1 >= f_coll / max_fnum)

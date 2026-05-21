@@ -1,0 +1,32 @@
+# Baseline exported from output/optim_czerny_xia2017_corrected_F1_pt_20260518_041443
+# Candidate: gen10_cand73
+# Date: 2026-05-18 18:12:19
+
+# ── Run parameters ───────────────────────────────────────────────────
+bom_path         = "data/czerny_bom_xia2017_corrected.toml"
+center_nm        = 550.0
+min_bw_nm        = 400.0
+max_rld          = 17.0
+max_fnum         = 5.0
+fold_mode        = "F1"
+point_source     = true
+optics_only      = false
+
+# ── Part selections ──────────────────────────────────────────────────
+m1_part          = "XIA-M1-CYL"
+m2_part          = "XIA-M2"
+grating_part     = "GR25-0605"
+f1_part          = "XIA-F1-CYL"
+
+# ── Genome parameters ────────────────────────────────────────────────
+L_a_mm               = 104.265125
+L_b_mm               = 114.173903
+alpha_deg            = 3.202521
+beta_deg             = -22.697479
+theta_m1_deg         = 10.2
+theta_m2_deg         = 12.239091
+L_m1_mm              = 91.53415
+L_m2_mm              = 86.74165
+theta_d_deg          = 4.917118
+L_f1_mm              = 92.224536
+theta_f1_deg         = 34.039943

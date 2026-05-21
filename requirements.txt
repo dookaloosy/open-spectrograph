@@ -1,0 +1,16 @@
+# open-spectrograph — Python dependencies
+#
+# Quick setup:
+#   ./bootstrap.sh
+#
+# pyproject.toml declares the full dependency set. This file pins
+# versions where compatibility matters.
+
+evolutionary-solver>=0.3.0,<0.4.0
+numpy
+scipy
+matplotlib
+raysect~=0.9.1
+
+# CAD (optional — installed by bootstrap.sh via pip install -e ".[cad]")
+build123d~=0.10.0

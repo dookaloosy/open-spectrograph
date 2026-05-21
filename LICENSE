@@ -1,0 +1,8 @@
+This repository is dual-licensed:
+
+  Software (source code, scripts, simulation):  MIT License
+  Hardware (STEP files, STL files, BOM, mechanical designs):  CERN-OHL-P v2
+
+Full license texts are in:
+  LICENSES/MIT.txt
+  LICENSES/CERN-OHL-P-2.0.txt

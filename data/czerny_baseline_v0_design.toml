@@ -1,0 +1,32 @@
+# Baseline exported from output/optim_czerny_tl_corrected_F1_20260518_150059
+# Candidate: gen04_cand29
+# Date: 2026-05-19 20:43:34
+
+# ── Run parameters ───────────────────────────────────────────────────
+bom_path         = "data/czerny_bom_v0_design.toml"
+center_nm        = 550.0
+min_bw_nm        = 300.0
+max_rld          = 17.0
+max_fnum         = 4.0
+fold_mode        = "F1"
+point_source     = true
+optics_only      = false
+
+# ── Part selections ──────────────────────────────────────────────────
+m1_part          = "CCM254-100-G01"
+m2_part          = "CM508-100-G01"
+grating_part     = "GR25-0605"
+f1_part          = "CCM254-025-G01"
+
+# ── Genome parameters ────────────────────────────────────────────────
+L_a_mm               = 86.559151
+L_b_mm               = 109.290328
+alpha_deg            = 3.490521
+beta_deg             = -23.009479
+theta_m1_deg         = 12.5
+theta_m2_deg         = 15.411546
+L_m1_mm              = 86.855977
+L_m2_mm              = 83.841045
+theta_d_deg          = 9.217112
+L_f1_mm              = 59.547748
+theta_f1_deg         = 24.428834
