@@ -33,7 +33,7 @@ tap_drill_dia_mm        = 2.0
 [manufacturing.insert]
 insert_part             = "94459A110"
 insert_thread           = "M2"
-insert_bore_dia_mm      = 3.3
+insert_bore_dia_mm      = 3.1
 insert_length_mm        = 2.5
 insert_min_material_mm  = 4.0
 insert_chamfer_mm       = 0.5
@@ -46,18 +46,18 @@ description             = "M2 brass heat-set insert for plastic"
 vendor                  = "McMaster-Carr"
 cost_usd                = 0.1946
 
-[hardware."93285A009"]
-description             = "M2×3.8 18-8 SS nylon-tip set screw"
+[hardware."92605A044"]
+description             = "M2×5 18-8 SS flat-tip set screw"
 vendor                  = "McMaster-Carr"
-cost_usd                = 3.08
+cost_usd                = 0.3868
 
 [hardware."92605A047"]
 description             = "M2×6 18-8 SS flat-tip set screw"
 vendor                  = "McMaster-Carr"
 cost_usd                = 0.408
 
-[hardware."99461A929"]
-description             = "M2.5×6 Phillips rounded head thread-forming screw"
+[hardware."99461A915"]
+description             = "M2×6 Phillips rounded head thread-forming screw"
 vendor                  = "McMaster-Carr"
 cost_usd                = 0.1314
 
@@ -87,9 +87,10 @@ channel_extension_mm    = 1.0
 wall_margin_mm          = 2.0
 head_clearance_mm       = 5.0
 foot_clearance_mm       = 3.80
+pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
-foot_bolt_thread        = "M2.5"
+foot_bolt_thread        = "M2"
 foot_bolt_spacing_mm    = 8.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
@@ -120,9 +121,10 @@ channel_extension_mm    = 1.0
 wall_margin_mm          = 2.0
 head_clearance_mm       = 5.0
 foot_clearance_mm       = 3.00
+pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
-foot_bolt_thread        = "M2.5"
+foot_bolt_thread        = "M2"
 foot_bolt_spacing_mm    = 20.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
@@ -152,9 +154,10 @@ contact_point_width_mm  = 2.0
 contact_point_height_mm = 1.0
 head_clearance_mm       = 5.0
 foot_clearance_mm       = 4.00
+pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
-foot_bolt_thread        = "M2.5"
+foot_bolt_thread        = "M2"
 foot_bolt_spacing_mm    = 8.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
@@ -173,8 +176,12 @@ blade_thickness_mm      = 0.0
 type                    = "hasma_direct"
 length_mm               = 9.652
 bore_radius_mm          = 2.87
+# 1/4"-36 UNS-2B internal thread:
+#   min major = 6.350mm, max minor = 5.740mm
+#   pitch dia: min = 5.893mm, max = 5.994mm
 thread_tpi              = 36
-thread_major_dia_mm     = 6.35
+thread_major_dia_mm     = 6.35          # min major diameter
+pilot_bore_dia_mm       = 5.5           # must be <= internal minor (5.740mm)
 hex_half_mm             = 4.6
 boundary_mm             = 3.873
 wall_half_mm            = 12.5
@@ -285,9 +292,10 @@ channel_extension_mm    = 1.0
 wall_margin_mm          = 2.0
 head_clearance_mm       = 5.0
 foot_clearance_mm       = 3.80
+pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
-foot_bolt_thread        = "M2.5"
+foot_bolt_thread        = "M2"
 foot_bolt_spacing_mm    = 8.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0

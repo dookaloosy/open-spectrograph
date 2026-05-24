@@ -52,17 +52,16 @@
 \centering\textbf{Abstract}\\[0.5em]
 \justify
 We present an aberration-corrected fiber-coupled Czerny-Turner
-spectrograph achieving sub-1\,nm spectral resolution over
-400--700\,nm at $f/4$. Built from off-the-shelf catalog optics,
-3D-printed flexure mounts, and an open-source 16-bit linear CCD
-detector, the complete instrument costs under \$500, less than a
-quarter of comparable commercial spectrometers. The design is driven
-by a non-sequential ray-tracing pipeline validated against published
-Zemax results. A genetic algorithm built around the ray tracer evolves
-the optical geometry, scoring each candidate for spot size and
-throughput; a procedural generator then produces the flexure mounts
-and housing directly from the winning geometry, ready to 3D-print
-and assemble.
+spectrograph achieving sub-1\,nm spectral resolution over 400--700\,nm
+at $f/4$. Built from off-the-shelf catalog optics, 3D-printed flexure
+mounts, and an open-source 16-bit linear CCD detector, the complete
+instrument targets a bill of materials under \$500, less than a quarter
+of comparable commercial spectrometers. The design is driven by a
+non-sequential ray-tracing pipeline validated against published Zemax
+results. A genetic algorithm built around the ray tracer evolves the
+optical geometry, scoring each candidate for spot size and throughput;
+a procedural generator then produces the flexure mounts and housing
+directly from the winning geometry, ready to 3D-print and assemble.
 \end{minipage}
 \vfill
 {\small \textit{Open Spectrograph: An Aberration-Corrected Fiber-Coupled Czerny-Turner Spectrograph}\\ \textcopyright\ 2026. Licensed under \href{https://ohwr.org/cern_ohl_p_v2.txt}{CERN-OHL-P v2} (hardware) and \href{https://opensource.org/licenses/MIT}{MIT} (software).}
@@ -183,7 +182,7 @@ would make quantitative spectroscopy accessible to education, citizen
 science, and resource-constrained research laboratories.
 Open Spectrograph achieves 0.2--0.5\,nm spectral resolution
 over a 350--750\,nm bandpass, fiber-coupled at $f/4$ (NA\,0.12), with
-a total bill of materials under \$500.
+a bill-of-materials target of \$500.
 
 \subsection{Design approach}
 
@@ -1015,7 +1014,7 @@ prototype.}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_4_v0-model.png}
-\caption{CAD model of the v0.1.0 assembly.}
+\caption{CAD model of the v0.2.0 assembly.}
 \label{fig:v0-model}
 \end{figure}
 
@@ -1187,7 +1186,7 @@ Throughput & $>$0.5\% & 22--41\% & All losses, $\lambda$-dependent \\
 $f$-number & $\leq f/4$ & $f/3.9$ & M1: 25.4\,mm, $f{=}100$\,mm \\
 RLD & $\leq$17\,nm/mm & 14.5\,nm/mm & 600\,g/mm, $f{=}100$\,mm \\
 BOM cost & $<$\$500 & \$912 & \textbf{Exceeds target by 82\%} \\
-Full assembly size & --- & 157$\times$172$\times$85\,mm & 3D printed housing \\
+Full assembly size & --- & 157$\times$172$\times$99\,mm & 3D printed housing \\
 \bottomrule
 \end{tabular*}
 \caption{The v0 design summary.}
@@ -1208,7 +1207,7 @@ the fastest path to a physical prototype.
 \begin{thebibliography}{99}
 
 \bibitem{raysect}
-Sherwood, M.\ and Sherwood, A.\ (2014).
+Meakins, A.\ and Carr, M.\ (2014).
 Raysect: a ray-tracing framework for scientific simulations.
 \url{https://github.com/raysect/source}
 

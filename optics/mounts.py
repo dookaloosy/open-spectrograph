@@ -123,6 +123,7 @@ class RoundMirrorFlexureMountParams:
     wall_margin_mm: float          # material around bore (v and w sides)
     head_clearance_mm: float       # material above optic centre to top face
     foot_clearance_mm: float       # material below optic centre to slab bottom
+    pusher_shelf_mm: float         # semicircular lip height above flexure gap
     rear_wall_mm: float            # material behind shoulder to back face
     # -- foot geometry --
     foot_thickness_mm: float       # foot slab thickness (w direction)
@@ -151,6 +152,7 @@ class GratingFlexureMountParams:
     # -- slab geometry --
     head_clearance_mm: float       # material above grating edge to top face
     foot_clearance_mm: float       # material below grating edge to slab bottom
+    pusher_shelf_mm: float         # semicircular lip height above flexure gap
     rear_wall_mm: float            # material behind grating to back face
     # -- foot geometry --
     foot_thickness_mm: float       # foot slab thickness (w direction)
@@ -183,6 +185,7 @@ class OAPMirrorFlexureMountParams:
     slab_thickness_mm: float       # total slab depth in u
     head_clearance_mm: float       # material above optic centre to top face
     foot_clearance_mm: float       # material below optic centre to slab bottom
+    pusher_shelf_mm: float         # semicircular lip height above flexure gap
     # -- foot geometry --
     foot_thickness_mm: float       # foot slab thickness (w direction)
     foot_bolt_thread: str          # "M3" clearance holes in foot rails

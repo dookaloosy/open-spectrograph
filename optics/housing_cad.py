@@ -54,20 +54,35 @@ _TOP_COVER_DEPTH_MM = 3.0
 _TOP_COVER_INSET_MM = 2.0
 _TOP_COVER_LEDGE_MM = 6.0
 _EMBOSS_DEPTH_MM = 0.5
-_COVER_SCREW_DIA_MM = 2.7
-_COVER_SCREW_HEAD_DIA_MM = 5.0
+_COVER_SCREW_DIA_MM = 2.4
+_COVER_SCREW_HEAD_DIA_MM = 4.0
 _COVER_SCREW_CBORE_DEPTH_MM = 2.0
-_COVER_SCREW_PILOT_DIA_MM = 2.0
+_COVER_SCREW_PILOT_DIA_MM = 1.6
 _COVER_SCREW_PILOT_DEPTH_MM = 5.0
 _COVER_SCREW_MIN_SEGMENT_MM = 15.0
 _PCBA_COVER_DEPTH_MM = 3.0
 _PCBA_COVER_LEDGE_MM = 6.0
+# Bottom-side cavities (exterior → interior):
+#   1. Ledge pocket — perimeter shelf the bottom cover plate sits in.
+#   2. Inner clear pocket — relief between cover plate and mount cavity
+#      floors; mount screws pass through here.
+#   3. Controller board pocket — rectangular pocket for PCB + components.
+#   4. Solder clearance zone — insert-spacing rect minus corner boss
+#      cylinders, directly above the board pocket.
+#   5. Corner bosses — solid cylinders inside the solder zone for
+#      heat-set inserts.
+#   6. Cable channel — connects the controller pocket to the detector
+#      PCBA pocket.
+#   7. USB channel — routes from the controller USB edge through the
+#      housing wall.
 _BOTTOM_COVER_INSET_MM = 2.0
-_BOTTOM_COVER_DEPTH_MM = 5.0
-_BOTTOM_COVER_CBORE_DEPTH_MM = 4.0
-_BOTTOM_COVER_LEDGE_MM = 6.0
-_BOTTOM_COVER_MIN_WALL_MM = 5.0
-_BOTTOM_COVER_WALL_MM = 3.0
+_BOTTOM_COVER_DEPTH_MM = 3.0           # cover plate thickness
+_BOTTOM_COVER_CBORE_DEPTH_MM = 2.0
+_BOTTOM_COVER_LEDGE_WIDTH_MM = 6.0     # ledge pocket shelf width
+_BOTTOM_COVER_EXTENSION_MM = 13.0      # vertical depth below z_bottom
+_BOTTOM_COVER_MIN_WALL_MM = 5.0        # floor between inner clear pocket and deepest cavity
+_BOTTOM_COVER_WALL_MM = 3.0            # USB channel wall thickness
+_CONTROLLER_Z_INSET_MM = 3.0           # board placement offset toward z_bottom_ext
 _HOUSING_COLOR = Color(0.45, 0.45, 0.45)
 
 
@@ -149,6 +164,29 @@ def _fillet_all(sk, r: float):
             pass
 
 
+def _build_clipped_cone(flare_plane, near_r, flare_rad,
+                        bore_pos, bore_inward,
+                        z_floor, z_height, extent):
+    """Build the HASMA cone clipped to a z-bounded cuboid.
+
+    Built outside any parent BuildPart so the intermediate solids
+    don't union into the housing body.
+    """
+    with BuildPart() as _cone_bp:
+        with BuildSketch(flare_plane):
+            Circle(radius=near_r)
+        extrude(amount=80.0, taper=-math.degrees(flare_rad))
+    clip_plane = Plane(
+        origin=Vector(bore_pos.X, bore_pos.Y, z_floor),
+        x_dir=bore_inward,
+        z_dir=Vector(0, 0, 1))
+    with BuildPart() as _clip_bp:
+        with BuildSketch(clip_plane):
+            Rectangle(extent * 2, extent * 2)
+        extrude(amount=z_height)
+    return _cone_bp.part.intersect(_clip_bp.part)
+
+
 def build_solid_housing_cad(
     spec,
     optics_scene,
@@ -182,7 +220,7 @@ def build_solid_housing_cad(
     """
     from optics.mounts_cad import place_all_in_scene_frame
 
-    z_bottom_ext = spec.z_bottom - _BOTTOM_COVER_LEDGE_MM
+    z_bottom_ext = spec.z_bottom - _BOTTOM_COVER_EXTENSION_MM
     z_top = spec.z_top
     height = z_top - z_bottom_ext
     r_cavity = _CAVITY_POCKET_FILLET_RADIUS_MM
@@ -272,9 +310,9 @@ def build_solid_housing_cad(
                          _EXTERIOR_FILLET_RADIUS_MM - _BOTTOM_COVER_INSET_MM)
 
     # Inner clear pocket: bottom cover outline inset by ledge.
-    _bc_inner_u = _bc_u - 2 * _BOTTOM_COVER_LEDGE_MM
-    _bc_inner_v = _bc_v - 2 * _BOTTOM_COVER_LEDGE_MM
-    _bc_inner_r = _EXTERIOR_FILLET_RADIUS_MM - _BOTTOM_COVER_INSET_MM - _BOTTOM_COVER_LEDGE_MM
+    _bc_inner_u = _bc_u - 2 * _BOTTOM_COVER_LEDGE_WIDTH_MM
+    _bc_inner_v = _bc_v - 2 * _BOTTOM_COVER_LEDGE_WIDTH_MM
+    _bc_inner_r = _EXTERIOR_FILLET_RADIUS_MM - _BOTTOM_COVER_INSET_MM - _BOTTOM_COVER_LEDGE_WIDTH_MM
     with BuildSketch(_bc_plane) as _bc_inner_sk:
         RectangleRounded(_bc_inner_u, _bc_inner_v, max(_bc_inner_r, 1.0))
 
@@ -305,7 +343,7 @@ def build_solid_housing_cad(
                     for x, y in poly]
 
         base_z = (spec.shallowest_floor_z if spec.floor_steps
-                  else z_bottom_ext + _BOTTOM_COVER_LEDGE_MM)
+                  else z_bottom_ext + _BOTTOM_COVER_EXTENSION_MM)
 
         # Compute compensated-offset pocket sketch for EVERY mount
         # (including shallowest) so all corners get fillet compensation.
@@ -363,12 +401,11 @@ def build_solid_housing_cad(
                              spec.hasma_bore_axis[1], 0)
         bore_pos = Vector(spec.hasma_bore_position[0],
                           spec.hasma_bore_position[1], 0)
-        _print_tol = spec.print_tolerance_mm
         bore_outside = bore_pos - bore_inward * 50
         bore_plane = Plane(origin=bore_outside, z_dir=bore_inward)
 
-        # Step 1: Drill undersize pilot bore (5.5mm dia).
-        _pilot_r = 2.75
+        # Step 1: Drill pilot bore (diameter from BOM).
+        _pilot_r = 0.5 * spec.hasma_pilot_bore_dia_mm
         with BuildSketch(bore_plane) as bore_sk:
             Circle(radius=_pilot_r)
         bore_tool = _cut_through_next(
@@ -381,7 +418,7 @@ def build_solid_housing_cad(
             _hasma_thread_params = (
                 spec.hasma_thread_tpi,
                 spec.hasma_thread_major_dia_mm,
-                bore_pos, bore_inward, _print_tol,
+                bore_pos, bore_inward,
             )
 
         # ── Detector features ────────────────────────────────────────
@@ -443,8 +480,7 @@ def build_solid_housing_cad(
         #    floor inward through remaining wall + glass.
         solder_floor = det_origin + inward * spec.detector_slot_depth
         pkg_plane = Plane(origin=solder_floor, x_dir=det_x, z_dir=inward)
-        pkg_depth = (spec.detector_pkg_slot_depth - spec.detector_slot_depth
-                     + spec.print_tolerance_mm)
+        pkg_depth = spec.detector_pkg_slot_depth - spec.detector_slot_depth
         with BuildSketch(pkg_plane):
             RectangleRounded(spec.detector_package_width + 2 * _PCBA_POCKET_CLEARANCE_MM,
                              spec.detector_package_height + 2 * _PCBA_POCKET_CLEARANCE_MM,
@@ -498,7 +534,7 @@ def build_solid_housing_cad(
             ctrl_up = Vector(0, 0, 1)
 
             # 1. Board pocket: full board envelope, components + PCB depth.
-            ctrl_pocket_ext = spec.controller_pocket_depth + _BOTTOM_COVER_LEDGE_MM
+            ctrl_pocket_ext = spec.controller_pocket_depth + _BOTTOM_COVER_EXTENSION_MM
             pocket_plane = Plane(
                 origin=Vector(cx, cy, z_bottom_ext),
                 x_dir=ctrl_x, z_dir=ctrl_up)
@@ -554,7 +590,7 @@ def build_solid_housing_cad(
                 (vx - cx) * neg_da[0] + (vy - cy) * neg_da[1]
                 for vx, vy in spec.housing_outline
             )
-            _ch_setback = _BOTTOM_COVER_LEDGE_MM + _BOTTOM_COVER_INSET_MM
+            _ch_setback = _BOTTOM_COVER_LEDGE_WIDTH_MM + _BOTTOM_COVER_INSET_MM
             ch_y_near = 0.0
             ch_y_far = housing_edge_y - _ch_setback
             ch_len = ch_y_far - ch_y_near
@@ -620,6 +656,8 @@ def build_solid_housing_cad(
                               _usb_y_offset, _usb_z_offset)
 
         # ── HASMA conical flare (tapered extrude inside BuildPart) ──
+        # Build the full cone, then intersect with a z-bounding box so
+        # it stops MIN_WALL before the top cover ledge and the basement.
         flare_rad = spec.hasma_bore_flare_half_angle_rad
         if flare_rad > 0:
             bx, by = spec.hasma_bore_axis
@@ -628,14 +666,20 @@ def build_solid_housing_cad(
                               spec.hasma_bore_position[1], 0)
             bnd_pos = bore_pos - bore_inward * spec.hasma_boundary_mm
             near_r = spec.hasma_hex_clearance_radius_mm
+
+            _dfz = min(fz for _, fz, _ in spec.mount_floor_hulls)
+            flare_z_floor = _dfz
+            flare_z_ceil = z_top - _TOP_COVER_DEPTH_MM - _BOTTOM_COVER_MIN_WALL_MM
+            flare_z_height = flare_z_ceil - flare_z_floor
+
             flare_plane = Plane(
                 origin=bnd_pos,
                 z_dir=-bore_inward)
-            with BuildSketch(flare_plane):
-                Circle(radius=near_r)
-            extrude(amount=80.0,
-                    taper=-math.degrees(flare_rad),
-                    mode=Mode.SUBTRACT)
+            _clipped_cone = _build_clipped_cone(
+                flare_plane, near_r, flare_rad,
+                bore_pos, bore_inward,
+                flare_z_floor, flare_z_height, height)
+            add(_clipped_cone, mode=Mode.SUBTRACT)
 
         # Step 2: Chamfer the pilot bore entry edge (after flare).
         if spec.hasma_thread_tpi is not None:
@@ -656,11 +700,11 @@ def build_solid_housing_cad(
         # Step 3: Subtract external thread solid (cylinder + teeth).
         # Oversized length so threads extend past both wall faces.
         if _hasma_thread_params is not None:
-            _tpi, _nom_major, _bp, _bi, _ptol = _hasma_thread_params
+            _tpi, _nom_major, _bp, _bi = _hasma_thread_params
             _pitch = 25.4 / _tpi
             _H = _pitch * math.sqrt(3) / 2
-            _pitch_r = _nom_major / 2
-            _minor_r = _pitch_r - 0.25 * _H + _ptol
+            _pitch_r = (_nom_major - 0.6495 * _pitch) / 2
+            _minor_r = _pitch_r - 0.25 * _H
             _tlen = 8.0
             _margin = 2.0
             _outward = Vector(-_bi.X, -_bi.Y, 0)
@@ -670,7 +714,7 @@ def build_solid_housing_cad(
             _ts = (_thread_origin.X, _thread_origin.Y, 0)
 
             _helix = Helix(pitch=_pitch, height=_tlen,
-                           radius=_pitch_r + _ptol,
+                           radius=_pitch_r,
                            center=_ts,
                            direction=(_outward.X, _outward.Y, 0))
             _h_start = _helix.position_at(0)
@@ -1031,7 +1075,7 @@ def build_solid_housing_cad(
     # (one in each remaining segment) instead of one at the midpoint.
     bc_edges = _bc_outline_sk.sketch.edges()
     bc_screw_positions: list[tuple[float, float]] = []
-    _bc_ledge_center = _BOTTOM_COVER_LEDGE_MM / 2
+    _bc_ledge_center = _BOTTOM_COVER_LEDGE_WIDTH_MM / 2
 
     # USB box footprint in world XY for edge splitting.
     _usb_box_half_w = 0.0
@@ -1240,7 +1284,7 @@ def build_solid_housing_cad(
             cx, cy = spec.controller_pocket_origin
             x_dir = spec.controller_pocket_x_dir
             angle_deg = math.degrees(math.atan2(x_dir[1], x_dir[0])) + 180.0
-            pcb_z = z_bottom_ext + ctrl_pocket_ext
+            pcb_z = z_bottom_ext + ctrl_pocket_ext - _CONTROLLER_Z_INSET_MM
             ctrl = (ctrl
                     .rotate(Axis.Z, angle_deg)
                     .translate((cx, cy, pcb_z)))
@@ -1248,16 +1292,16 @@ def build_solid_housing_cad(
             ctrl.color = Color(0.15, 0.45, 0.15)
             ctrl_placed = ctrl
 
-    # ── Place M2.5 pan head screws on top cover ──────────────────
+    # ── Place M2 pan head screws on top cover ──────────────────
     tc_screw_solids: list = []
     if screw_positions:
         from optics.mounts_cad import _load_or_procedural
-        _raw_screw = _load_or_procedural("99461A929")
+        _raw_screw = _load_or_procedural("99461A915")
         for sx, sy in screw_positions:
             placed = _raw_screw.moved(Location(
                 (sx, sy, z_top - _COVER_SCREW_CBORE_DEPTH_MM),
             ))
-            placed.label = "99461A929"
+            placed.label = "99461A915"
             placed.color = Color(0.75, 0.75, 0.78)
             tc_screw_solids.append(placed)
 
@@ -1270,11 +1314,11 @@ def build_solid_housing_cad(
     top_cover_asm = Compound(children=tc_children)
     top_cover_asm.label = "top_cover_assembly"
 
-    # ── Place M2.5 pan head screws on detector cover ─────────
+    # ── Place M2 pan head screws on detector cover ─────────
     dc_screw_solids: list = []
     if cover_screw_positions:
         from optics.mounts_cad import _load_or_procedural as _lop_dc
-        _raw_dc_screw = _lop_dc("99461A929")
+        _raw_dc_screw = _lop_dc("99461A915")
         _outward_3d = Vector(_dco_outward[0], _dco_outward[1], 0)
         for sx, sy, sz in cover_screw_positions:
             screw_origin = (Vector(sx, sy, sz)
@@ -1285,7 +1329,7 @@ def build_solid_housing_cad(
                 x_dir=_det_u_vec,
                 z_dir=_outward_3d)
             placed = _raw_dc_screw.moved(screw_plane.location)
-            placed.label = "99461A929"
+            placed.label = "99461A915"
             placed.color = Color(0.75, 0.75, 0.78)
             dc_screw_solids.append(placed)
 
@@ -1294,18 +1338,18 @@ def build_solid_housing_cad(
     det_cover_asm = Compound(children=dc_children)
     det_cover_asm.label = "detector_cover_assembly"
 
-    # ── Place M2.5 pan head screws on bottom cover ─────────────
+    # ── Place M2 pan head screws on bottom cover ─────────────
     bc_screw_solids: list = []
     if bc_screw_positions:
         from optics.mounts_cad import _load_or_procedural as _lop_bc
         from build123d import Rot
-        _raw_bc_screw = _lop_bc("99461A929")
+        _raw_bc_screw = _lop_bc("99461A915")
         for sx, sy in bc_screw_positions:
             placed = _raw_bc_screw.moved(Location(
                 (sx, sy, z_bottom_ext + _BOTTOM_COVER_CBORE_DEPTH_MM),
                 (180, 0, 0),
             ))
-            placed.label = "99461A929"
+            placed.label = "99461A915"
             placed.color = Color(0.75, 0.75, 0.78)
             bc_screw_solids.append(placed)
 
@@ -1314,11 +1358,11 @@ def build_solid_housing_cad(
     bottom_cover_asm = Compound(children=bc_children)
     bottom_cover_asm.label = "bottom_cover_assembly"
 
-    # ── Place M2.5 pan head screws for detector board ────────────
+    # ── Place M2 pan head screws for detector board ────────────
     det_board_screw_solids: list = []
     if spec.insert_hole_positions:
         from optics.mounts_cad import _load_or_procedural as _lop_det
-        _raw_det_screw = _lop_det("99461A929")
+        _raw_det_screw = _lop_det("99461A915")
         _det_outward_3d = Vector(-spec.detector_plane_z_dir[0],
                                  -spec.detector_plane_z_dir[1], 0)
         _det_x_3d = Vector(spec.detector_plane_x_dir[0],
@@ -1331,15 +1375,15 @@ def build_solid_housing_cad(
                 x_dir=_det_x_3d,
                 z_dir=_det_outward_3d)
             placed = _raw_det_screw.moved(screw_plane.location)
-            placed.label = "99461A929"
+            placed.label = "99461A915"
             placed.color = Color(0.75, 0.75, 0.78)
             det_board_screw_solids.append(placed)
 
-    # ── Place M2.5 pan head screws for controller board ──────────
+    # ── Place M2 pan head screws for controller board ──────────
     ctrl_screw_solids: list = []
     if spec.controller_pocket_origin is not None:
         from optics.mounts_cad import _load_or_procedural as _lop_ctrl
-        _raw_ctrl_screw = _lop_ctrl("99461A929")
+        _raw_ctrl_screw = _lop_ctrl("99461A915")
         _ctrl_cx, _ctrl_cy = spec.controller_pocket_origin
         _ctrl_x_dir = Vector(spec.controller_pocket_x_dir[0],
                              spec.controller_pocket_x_dir[1], 0)
@@ -1353,7 +1397,7 @@ def build_solid_housing_cad(
             iy = (_ctrl_cy + sx * _ctrl_half_isw * _ctrl_x_dir.Y
                   + sy * _ctrl_half_ish * _ctrl_y_dir.Y)
             screw_origin = Vector(ix, iy,
-                                  z_bottom_ext + _BOTTOM_COVER_LEDGE_MM
+                                  z_bottom_ext + _BOTTOM_COVER_EXTENSION_MM
                                   + spec.controller_pocket_depth
                                   - _ctrl_pcb_gap)
             screw_plane = Plane(
@@ -1361,15 +1405,15 @@ def build_solid_housing_cad(
                 x_dir=_ctrl_x_dir,
                 z_dir=Vector(0, 0, -1))
             placed = _raw_ctrl_screw.moved(screw_plane.location)
-            placed.label = "99461A929"
+            placed.label = "99461A915"
             placed.color = Color(0.75, 0.75, 0.78)
             ctrl_screw_solids.append(placed)
 
-    # ── Place M2.5 pan head screws for mount feet ───────────────
+    # ── Place M2 pan head screws for mount feet ───────────────
     mount_screw_solids: list = []
     if spec.mount_fasteners:
         from optics.mounts_cad import _load_or_procedural as _lop_mnt
-        _raw_mnt_screw = _lop_mnt("99461A929")
+        _raw_mnt_screw = _lop_mnt("99461A915")
         for mf in spec.mount_fasteners:
             if mf.kind != "bolt":
                 continue
@@ -1380,7 +1424,7 @@ def build_solid_housing_cad(
                 x_dir=Vector(1, 0, 0),
                 z_dir=Vector(0, 0, -1))
             placed = _raw_mnt_screw.moved(screw_plane.location)
-            placed.label = "99461A929"
+            placed.label = "99461A915"
             placed.color = Color(0.75, 0.75, 0.78)
             mount_screw_solids.append(placed)
 

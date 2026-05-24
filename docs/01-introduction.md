@@ -44,7 +44,7 @@ The gap is straightforward: no open-source spectrometer combines
 reproducible build using off-the-shelf optics and open-source
 electronics. Our target for Open Spectrograph is ~1 nm spectral
 resolution over a 400-700 nm bandpass, fiber-coupled at f/4 (NA 0.12),
-with a total bill of materials under $500.
+with a bill-of-materials target of $500.
 
 ## 1.3 Design approach
 
@@ -57,7 +57,7 @@ a new optical topology; it is a well-understood architecture executed
 with open tooling and simulation-driven optimization.
 
 **Simulation-driven optimization.** We employ a non-sequential forward
-ray-tracing simulation built on raysect (Sherwood and Sherwood, 2022)
+ray-tracing simulation built on raysect (Meakins and Carr, 2014)
 to evaluate candidate designs against an RMS spot-size fitness function.
 A genetic algorithm searches over the deviation angle, mirror incidence
 angles, fold mirror placement, and discrete BOM part selections. The

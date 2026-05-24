@@ -63,6 +63,10 @@ _MOUNT_COLOR = Color(0.35, 0.37, 0.40)
 _GRATING_COLOR = Color(0.20, 0.55, 0.25)
 _DETECTOR_COLOR = Color(0.15, 0.45, 0.15)
 _SLIT_COLOR = Color(0.55, 0.55, 0.60)
+# Blind setscrew bore: leave a thin floor so a flat-tip setscrew
+# pushes the optic through the wall instead of touching it directly.
+# Eliminates the need for expensive nylon-tipped setscrews.
+_SETSCREW_FLOOR_MM = 0.5
 
 from optics.mounts import (
     GratingFlexureMountParams,
@@ -200,8 +204,8 @@ def build_mirror_flexure_mount_cad(
         extrude(bore_sk.sketch, amount=front_bore_depth_mm,
                 mode=Mode.SUBTRACT)
 
-        # Setscrew insert bore from top (sketched on body top face).
-        ss_bore_depth_mm = params.head_clearance_mm + params.wall_margin_mm
+        # Setscrew insert bore from top (blind — 0.5mm floor above bore).
+        ss_bore_depth_mm = (w_top - upper_r) - _SETSCREW_FLOOR_MM
         top_face = mount.faces().sort_by(Axis.Y)[-1]
         u_mid = u_wall_rear + 0.5 * slab_total_u_mm
         with BuildSketch(top_face) as ss_sk:
@@ -321,8 +325,33 @@ def build_mirror_flexure_mount_cad(
                      height=mfg.insert_chamfer_mm,
                      rotation=chamfer_rot, mode=Mode.SUBTRACT)
 
-    mount.part.label = "flexure_mount"
-    return mount.part
+
+    # Pusher shelf: semicircular lip above w_bot at u_pusher so the
+    # setscrew can't slip past the flexure lip when it opens.
+    # Built outside BuildPart to avoid coplanar boolean issues.
+    _shelf_plane = Plane(
+        origin=(0, w_bot, u_pusher),
+        x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+    with BuildPart() as _shelf_bp:
+        with BuildSketch(_shelf_plane):
+            Circle(0.5 * boss_width_mm)
+        extrude(amount=params.pusher_shelf_mm)
+    result = mount.part.fuse(_shelf_bp.part)
+    _shelf_fillet_r = min(mfg.fillet_radius_mm, 0.49 * params.pusher_shelf_mm)
+    _shelf_r = 0.5 * boss_width_mm
+    _fillet_edges = [
+        e for e in result.edges()
+        if abs(e.center().Z) < 0.1
+        and w_bot < e.center().Y < w_bot + params.pusher_shelf_mm
+        and abs(math.hypot(e.center().X, e.center().Z - u_pusher) - _shelf_r) < 0.5
+    ]
+    if _fillet_edges and _shelf_fillet_r > 0.1:
+        try:
+            result = result.fillet(_shelf_fillet_r, _fillet_edges)
+        except Exception:
+            pass
+    result.label = "flexure_mount"
+    return result
 
 
 def build_oap_flexure_mount_cad(
@@ -521,8 +550,33 @@ def build_oap_flexure_mount_cad(
                      height=mfg.insert_chamfer_mm,
                      rotation=chamfer_rot, mode=Mode.SUBTRACT)
 
-    mount.part.label = "flexure_mount"
-    return mount.part
+
+    # Pusher shelf: semicircular lip above w_bot at u_pusher so the
+    # setscrew can't slip past the flexure lip when it opens.
+    # Built outside BuildPart to avoid coplanar boolean issues.
+    _shelf_plane = Plane(
+        origin=(0, w_bot, u_pusher),
+        x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+    with BuildPart() as _shelf_bp:
+        with BuildSketch(_shelf_plane):
+            Circle(0.5 * boss_width_mm)
+        extrude(amount=params.pusher_shelf_mm)
+    result = mount.part.fuse(_shelf_bp.part)
+    _shelf_fillet_r = min(mfg.fillet_radius_mm, 0.49 * params.pusher_shelf_mm)
+    _shelf_r = 0.5 * boss_width_mm
+    _fillet_edges = [
+        e for e in result.edges()
+        if abs(e.center().Z) < 0.1
+        and w_bot < e.center().Y < w_bot + params.pusher_shelf_mm
+        and abs(math.hypot(e.center().X, e.center().Z - u_pusher) - _shelf_r) < 0.5
+    ]
+    if _fillet_edges and _shelf_fillet_r > 0.1:
+        try:
+            result = result.fillet(_shelf_fillet_r, _fillet_edges)
+        except Exception:
+            pass
+    result.label = "flexure_mount"
+    return result
 
 
 def build_grating_flexure_mount_cad(
@@ -625,9 +679,8 @@ def build_grating_flexure_mount_cad(
                 fillet2d(contact_verts, radius=contact_radius_mm)
         extrude(pocket_sk.sketch, amount=pocket_depth_mm, mode=Mode.SUBTRACT)
 
-        # Setscrew insert bore from top (sketched on body top face).
-        ss_bore_depth_mm = params.head_clearance_mm + params.wall_margin_mm \
-            if hasattr(params, 'wall_margin_mm') else (w_top - w_opening_upper + 0.1)
+        # Setscrew insert bore from top (blind — 0.5mm floor above pocket).
+        ss_bore_depth_mm = (w_top - w_opening_upper) - _SETSCREW_FLOOR_MM
         top_face = mount.faces().sort_by(Axis.Y)[-1]
         u_mid = u_wall_rear + 0.5 * slab_total_u_mm
         with BuildSketch(top_face) as ss_sk:
@@ -736,8 +789,33 @@ def build_grating_flexure_mount_cad(
                      height=mfg.insert_chamfer_mm,
                      rotation=chamfer_rot, mode=Mode.SUBTRACT)
 
-    mount.part.label = "flexure_mount"
-    return mount.part
+
+    # Pusher shelf: semicircular lip above w_bot at u_pusher so the
+    # setscrew can't slip past the flexure lip when it opens.
+    # Built outside BuildPart to avoid coplanar boolean issues.
+    _shelf_plane = Plane(
+        origin=(0, w_bot, u_pusher),
+        x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+    with BuildPart() as _shelf_bp:
+        with BuildSketch(_shelf_plane):
+            Circle(0.5 * boss_width_mm)
+        extrude(amount=params.pusher_shelf_mm)
+    result = mount.part.fuse(_shelf_bp.part)
+    _shelf_fillet_r = min(mfg.fillet_radius_mm, 0.49 * params.pusher_shelf_mm)
+    _shelf_r = 0.5 * boss_width_mm
+    _fillet_edges = [
+        e for e in result.edges()
+        if abs(e.center().Z) < 0.1
+        and w_bot < e.center().Y < w_bot + params.pusher_shelf_mm
+        and abs(math.hypot(e.center().X, e.center().Z - u_pusher) - _shelf_r) < 0.5
+    ]
+    if _fillet_edges and _shelf_fillet_r > 0.1:
+        try:
+            result = result.fillet(_shelf_fillet_r, _fillet_edges)
+        except Exception:
+            pass
+    result.label = "flexure_mount"
+    return result
 
 
 
@@ -746,12 +824,12 @@ def build_grating_flexure_mount_cad(
 _VENDOR_STEP_BY_PART = {
     "HASMA":         "data/step/HASMA.step",
     "94459A110":     "data/step/94459A110_Heat-Set Inserts for Plastic.STEP",
-    "93285A009":     "data/step/93285A009_18-8 Stainless Steel Nylon-Tip Set Screw.STEP",
+    "92605A044":     "data/step/92605A044_Stainless Steel Flat-Tip Set Screw.STEP",
     "92605A047":     "data/step/92605A047_Stainless Steel Flat-Tip Set Screw.STEP",
     "91771A108":     "data/step/91771A108_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
     "91771A109":     "data/step/91771A109_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
     "91771A194":     "data/step/91771A194_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
-    "99461A929":     "data/step/99461A929_Phillips Rounded Head Thread-Forming Screws.STEP",
+    "99461A915":     "data/step/99461A915_Phillips Rounded Head Thread-Forming Screws.STEP",
     "TCD1304":       "data/step/TCD1304_SPI_Rev2EB.step",
     "Controller_T4_R3EB": "data/step/Controller_T4_R3EB.step",
 }
@@ -927,8 +1005,8 @@ def _procedural_flat_tip_set_screw() -> Part:
     return bp.part
 
 
-def _procedural_nylon_tip_set_screw() -> Part:
-    """Procedural M2x3.8 nylon-tip set screw (93285A009).
+def _procedural_short_flat_tip_set_screw() -> Part:
+    """Procedural M2×5 flat-tip set screw (92605A044).
 
     Threaded cylinder with hex socket.  Reads thread diameter from the
     BOM [manufacturing.bolts.M2] section.
@@ -940,7 +1018,7 @@ def _procedural_nylon_tip_set_screw() -> Part:
     with bom_path.open("rb") as f:
         bom = tomllib.load(f)
     major_dia_mm = float(bom["manufacturing"]["bolts"]["M2"]["thread_dia_mm"])
-    length_mm = 3.8            # M2x3.8 (vendor overall length)
+    length_mm = 5.0
     hex_socket_af_mm = 0.9
     hex_depth_mm = 1.0
 
@@ -950,7 +1028,6 @@ def _procedural_nylon_tip_set_screw() -> Part:
             align=(Align.CENTER, Align.CENTER, Align.MIN),
             rotation=(0, 90, 0),
         )
-        # Hex socket bore from max X end
         socket_plane = Plane(origin=(length_mm, 0, 0),
                              x_dir=(0, 1, 0), z_dir=(-1, 0, 0))
         with BuildSketch(socket_plane):
@@ -959,24 +1036,24 @@ def _procedural_nylon_tip_set_screw() -> Part:
                 radius=0.5 * hex_socket_af_mm / math.cos(math.radians(30)),
                 side_count=6)
         extrude(amount=hex_depth_mm, mode=Mode.SUBTRACT)
-    bp.part.label = "93285A009_procedural"
+    bp.part.label = "92605A044_procedural"
     return bp.part
 
 
 def _procedural_pan_head_screw() -> Part:
-    """Procedural M2.5×6 Phillips rounded head thread-forming screw (99461A929).
+    """Procedural M2×6 Phillips rounded head thread-forming screw (99461A915).
 
     Cylindrical head + cylindrical shaft.  Axis along +Z, head at top.
     Dimensions from vendor STEP bounding box.
     """
-    head_dia_mm = 4.4
-    head_height_mm = 1.8
-    shaft_dia_mm = 2.5
+    head_dia_mm = 3.5
+    head_height_mm = 1.4
+    shaft_dia_mm = 2.0
     shaft_length_mm = 6.0
 
-    slot_width_mm = 0.8
-    slot_length_mm = 3.2
-    slot_depth_mm = 1.0
+    slot_width_mm = 0.6
+    slot_length_mm = 2.6
+    slot_depth_mm = 0.8
 
     with BuildPart() as bp:
         Cylinder(
@@ -991,7 +1068,7 @@ def _procedural_pan_head_screw() -> Part:
             Rectangle(slot_length_mm, slot_width_mm)
             Rectangle(slot_width_mm, slot_length_mm)
         extrude(amount=-slot_depth_mm, mode=Mode.SUBTRACT)
-    bp.part.label = "99461A929_procedural"
+    bp.part.label = "99461A915_procedural"
     return bp.part
 
 
@@ -1047,8 +1124,8 @@ _PROCEDURAL_BUILDERS: dict[str, callable] = {
     "HASMA":     _procedural_hasma,
     "94459A110": _procedural_heat_set_insert,
     "92605A047": _procedural_flat_tip_set_screw,
-    "93285A009": _procedural_nylon_tip_set_screw,
-    "99461A929": _procedural_pan_head_screw,
+    "92605A044": _procedural_short_flat_tip_set_screw,
+    "99461A915": _procedural_pan_head_screw,
 }
 
 # Flat head screws are parameterised — add lambda wrappers from the catalog.
@@ -1320,7 +1397,7 @@ def build_f_mirror_assembly(part_number: str, *,
 
     children.append(ins_top.translate((0, w_top, u_bolt)))
 
-    raw_ss = _load_or_procedural("93285A009")
+    raw_ss = _load_or_procedural("92605A044")
     ss_top = raw_ss.rotate(Axis.Z, 90.0)
     ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
     children.append(ss_top.translate((0, w_top - params.head_clearance_mm, u_bolt)))
@@ -1623,6 +1700,7 @@ def _flexure_params_from_bom(mount_dict: dict) -> RoundMirrorFlexureMountParams:
         wall_margin_mm=float(mount_dict["wall_margin_mm"]),
         head_clearance_mm=float(mount_dict["head_clearance_mm"]),
         foot_clearance_mm=float(mount_dict["foot_clearance_mm"]),
+        pusher_shelf_mm=float(mount_dict["pusher_shelf_mm"]),
         rear_wall_mm=float(mount_dict["rear_wall_mm"]),
         foot_thickness_mm=float(mount_dict["foot_thickness_mm"]),
         foot_bolt_thread=str(mount_dict["foot_bolt_thread"]),
@@ -1708,6 +1786,7 @@ def _oap_flexure_params_from_bom(mount_dict: dict) -> OAPMirrorFlexureMountParam
         slab_thickness_mm=float(mount_dict["slab_thickness_mm"]),
         head_clearance_mm=float(mount_dict["head_clearance_mm"]),
         foot_clearance_mm=float(mount_dict["foot_clearance_mm"]),
+        pusher_shelf_mm=float(mount_dict["pusher_shelf_mm"]),
         foot_thickness_mm=float(mount_dict["foot_thickness_mm"]),
         foot_bolt_thread=str(mount_dict["foot_bolt_thread"]),
         foot_bolt_spacing_mm=float(mount_dict["foot_bolt_spacing_mm"]),
@@ -1885,7 +1964,7 @@ def build_mirror_flexure_full_assembly(
     """Round mirror flexure mount + vendor mirror + heat-set inserts + setscrews.
 
     Hardware placed:
-      - 1 top insert + nylon-tip setscrew (93285A009) for optic retention
+      - 1 top insert + flat-tip setscrew (92605A044) for optic retention
       - 1 pusher insert (centre, through foot)
       - 1 flat-tip pusher setscrew (92605A047) at flexure gap
     """
@@ -1936,8 +2015,8 @@ def build_mirror_flexure_full_assembly(
     # Top insert (setscrew bore, at u_bolt)
     children.append(ins_top.translate((0, w_top, u_bolt)))
 
-    # Top nylon-tip setscrew (nylon tip at optic crown = w_top - head_clearance)
-    raw_ss = _load_or_procedural("93285A009")
+    # Top flat-tip setscrew (tip at optic crown = w_top - head_clearance)
+    raw_ss = _load_or_procedural("92605A044")
     ss_top = raw_ss.rotate(Axis.Z, 90.0)
     ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
     children.append(ss_top.translate((0, w_top - params.head_clearance_mm, u_bolt)))
@@ -1981,7 +2060,7 @@ def build_grating_flexure_full_assembly(
     """Grating flexure mount + vendor grating + heat-set inserts + setscrews.
 
     Hardware placed:
-      - 1 top insert + nylon-tip setscrew (93285A009) for optic retention
+      - 1 top insert + flat-tip setscrew (92605A044) for optic retention
       - 1 pusher insert (centre, through foot)
       - 1 flat-tip pusher setscrew (92605A047) at flexure gap
     """
@@ -2033,8 +2112,8 @@ def build_grating_flexure_full_assembly(
     # Top insert (at u_setscrew, centred on grating)
     children.append(ins_top.translate((0, w_top, u_setscrew)))
 
-    # Top nylon-tip setscrew (nylon tip at grating edge = w_top - head_clearance)
-    raw_ss = _load_or_procedural("93285A009")
+    # Top flat-tip setscrew (tip at grating edge = w_top - head_clearance)
+    raw_ss = _load_or_procedural("92605A044")
     ss_top = raw_ss.rotate(Axis.Z, 90.0)
     ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
     children.append(ss_top.translate((0, w_top - params.head_clearance_mm, u_setscrew)))
@@ -2077,6 +2156,7 @@ def _grating_flexure_params_from_bom(mount_dict: dict) -> GratingFlexureMountPar
         contact_point_height_mm=float(mount_dict["contact_point_height_mm"]),
         head_clearance_mm=float(mount_dict["head_clearance_mm"]),
         foot_clearance_mm=float(mount_dict["foot_clearance_mm"]),
+        pusher_shelf_mm=float(mount_dict["pusher_shelf_mm"]),
         rear_wall_mm=float(mount_dict["rear_wall_mm"]),
         foot_thickness_mm=float(mount_dict["foot_thickness_mm"]),
         foot_bolt_thread=str(mount_dict["foot_bolt_thread"]),
