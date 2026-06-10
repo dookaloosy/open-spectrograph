@@ -147,9 +147,7 @@ class SolidHousingSpec:
     hasma_bore_flare_half_angle_rad: float
     hasma_boundary_mm: float
     hasma_hex_clearance_radius_mm: float
-    hasma_pilot_bore_dia_mm: float
-    hasma_thread_tpi: float | None
-    hasma_thread_major_dia_mm: float | None
+    hasma_tap_drill_dia_mm: float
 
     # Detector
     detector_pcba_width: float
@@ -997,9 +995,7 @@ def build_solid_housing_spec(
         hasma_bore_flare_half_angle_rad=hasma_bore_flare_half_angle_rad,
         hasma_boundary_mm=hasma_boundary,
         hasma_hex_clearance_radius_mm=hex_half + cavity_clearance_mm,
-        hasma_pilot_bore_dia_mm=float(parts.slit_mount["pilot_bore_dia_mm"]),
-        hasma_thread_tpi=parts.slit_mount.get("thread_tpi"),
-        hasma_thread_major_dia_mm=parts.slit_mount.get("thread_major_dia_mm"),
+        hasma_tap_drill_dia_mm=float(parts.slit_mount["tap_drill_dia_mm"]),
         detector_pcba_width=board_w,
         detector_pcba_height=board_h,
         detector_boundary_mm=boundary,

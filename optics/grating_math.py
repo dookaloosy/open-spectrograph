@@ -101,9 +101,8 @@ def wavelength_pixel_position(
     R_D = analytical_dispersion_nm_per_mm(
         groove_density_per_mm, focal_length_mm, design_wavelength_nm)
     centre_px = n_pixels // 2
-    # Negate: shorter wavelengths diffract to higher pixel indices
-    # in the detector's local frame (local +x opposes the grating
-    # equation's sign convention for beta).
+    # Shorter wavelengths → higher pixel indices → raysect local +x
+    # → STEP +X → pin 1 (notch) end of the TCD1304 = blue end.
     offset_mm = -(wavelength_nm - design_wavelength_nm) / R_D
     return centre_px + offset_mm / pixel_pitch_mm
 

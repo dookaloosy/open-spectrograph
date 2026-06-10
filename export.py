@@ -118,7 +118,7 @@ def _parse_args() -> argparse.Namespace:
     modes.add_argument("--step", action="store_true",
                        help="Export vendor-optics STEP assembly")
     modes.add_argument("--cad", action="store_true",
-                       help="Full CAD: scene STEP + housing STEP + per-part STL")
+                       help="Full CAD: scene STEP + housing STEP + per-part STEP")
     modes.add_argument("--layout", action="store_true",
                        help="2-D top-down layout diagram (matplotlib PNG)")
     modes.add_argument("--save-baseline", type=str, default=None,
@@ -436,6 +436,7 @@ def _do_cad(args, design, genome, parts, scene, has_housing, placed, out_dir,
         print(f"Wrote {bottom_cover_path}")
 
     # Per-role flexure mount STEP files (F1, M1, grating, M2, etc.)
+    # Export mount + captive TPU contact bumps as a single Compound.
     if placed_by_label is not None:
         for role, parts_list in placed_by_label.items():
             if role in ("entrance_slit", "detector"):
@@ -444,9 +445,52 @@ def _do_cad(args, design, genome, parts, scene, has_housing, placed, out_dir,
                 continue
             asm = parts_list[0]
             mount = asm.children[0] if asm.children else asm
+            mount_children = [mount]
+            if hasattr(mount, "_contact_bumps"):
+                mount_children.append(mount._contact_bumps)
+            mount_compound = Compound(children=mount_children)
             mount_path = out_dir / f"{role.lower()}_mount.step"
-            export_step(mount, str(mount_path))
+            export_step(mount_compound, str(mount_path))
             print(f"Wrote {mount_path}")
+
+    # Assembly fixtures
+    from optics.mounts_cad import (
+        build_mirror_assembly_fixture, build_grating_assembly_fixture,
+        build_hasma_tap_fixture,
+    )
+    mirror_parts = {
+        "m1": getattr(parts, "m1_part", None),
+        "m2": getattr(parts, "m2_part", None),
+        "f1": getattr(parts, "f1_part", None),
+    }
+    for role, pn in mirror_parts.items():
+        if pn is None:
+            continue
+        try:
+            fixture = build_mirror_assembly_fixture(pn, label=role.upper())
+            fixture_path = out_dir / f"{role}_fixture.step"
+            export_step(fixture, str(fixture_path))
+            print(f"Wrote {fixture_path}")
+        except Exception as e:
+            print(f"[fixture] {role} skipped: {e}")
+    grating_pn = getattr(parts, "grating_part", None)
+    if grating_pn is not None:
+        try:
+            fixture = build_grating_assembly_fixture(grating_pn)
+            fixture_path = out_dir / "grating_fixture.step"
+            export_step(fixture, str(fixture_path))
+            print(f"Wrote {fixture_path}")
+        except Exception as e:
+            print(f"[fixture] grating skipped: {e}")
+
+    # HASMA tap guide fixture
+    try:
+        tap_fixture = build_hasma_tap_fixture()
+        tap_path = out_dir / "hasma_tap_fixture.step"
+        export_step(tap_fixture, str(tap_path))
+        print(f"Wrote {tap_path}")
+    except Exception as e:
+        print(f"[fixture] hasma tap skipped: {e}")
 
     if housing_compound is not None:
         _write_bom_csv(parts, bom_path, housing_compound, out_dir)

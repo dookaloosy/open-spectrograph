@@ -414,30 +414,30 @@ def forward_trace_metrics(
             result[f"tan_skewness_{int(wl)}"] = float('nan')
 
         # ILF from hit distribution along dispersion axis.
+        # Uses encircled-energy width: the narrowest contiguous window
+        # of pixel bins containing ≥76% of hits (equivalent to a
+        # Gaussian FWHM). Robust against split spots and skew tails.
         if n_inside < 3:
             result[f"ilf_fwhm_{int(wl)}_nm"] = float('nan')
         else:
-            bins = np.arange(hx.min() - pixel_pitch_mm,
-                             hx.max() + 2 * pixel_pitch_mm,
-                             pixel_pitch_mm)
-            if len(bins) < 3:
+            from optics.grating_math import analytical_dispersion_nm_per_mm
+            R_D = analytical_dispersion_nm_per_mm(
+                parts.grating_groove_density_per_mm,
+                parts.m2_focal_length_mm, wl)
+            sorted_hx = np.sort(hx[np.isfinite(hx)])
+            n = len(sorted_hx)
+            if n < 3:
                 result[f"ilf_fwhm_{int(wl)}_nm"] = float('nan')
             else:
-                counts, edges = np.histogram(hx, bins=bins)
-                centers = 0.5 * (edges[:-1] + edges[1:])
-                if counts.max() > 0:
-                    half_max = counts.max() * 0.5
-                    above = counts >= half_max
-                    idxs = np.where(above)[0]
-                    fwhm_mm = centers[idxs[-1]] - centers[idxs[0]]
-                    from optics.grating_math import analytical_dispersion_nm_per_mm
-                    R_D = analytical_dispersion_nm_per_mm(
-                        parts.grating_groove_density_per_mm,
-                        parts.m2_focal_length_mm, wl)
-                    fwhm_nm = fwhm_mm * R_D
-                    result[f"ilf_fwhm_{int(wl)}_nm"] = max(fwhm_nm, 0.1)
-                else:
-                    result[f"ilf_fwhm_{int(wl)}_nm"] = float('nan')
+                target = int(math.ceil(n * 0.7655))
+                target = min(target, n)
+                best_width = sorted_hx[-1] - sorted_hx[0]
+                for i in range(n - target + 1):
+                    w = sorted_hx[i + target - 1] - sorted_hx[i]
+                    if w < best_width:
+                        best_width = w
+                ee_nm = best_width * R_D
+                result[f"ilf_fwhm_{int(wl)}_nm"] = max(ee_nm, 0.1)
 
     # Aggregate metrics.
     fluxes = [result[f"flux_{int(wl)}_nm"] for wl in wavelengths_nm]

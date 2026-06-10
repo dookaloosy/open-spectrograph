@@ -33,7 +33,7 @@ tap_drill_dia_mm        = 2.0
 [manufacturing.insert]
 insert_part             = "94459A110"
 insert_thread           = "M2"
-insert_bore_dia_mm      = 3.1
+insert_bore_dia_mm      = 3.0
 insert_length_mm        = 2.5
 insert_min_material_mm  = 4.0
 insert_chamfer_mm       = 0.5
@@ -81,6 +81,7 @@ off_axis_angle_deg      = 0.0
 
 [mirrors.m1_options.CCM254-100-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 12.7
 channel_extension_mm    = 1.0
@@ -97,6 +98,9 @@ front_bolt_offset_mm    = 8.0
 flexure_thickness_mm    = 0.80
 flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 12.7
 
 # M2 = focusing mirror. Spherical, f=100mm.
 # Thorlabs CM508-100-G01 (2" protected Al concave spherical).
@@ -115,6 +119,7 @@ off_axis_angle_deg      = 0.0
 
 [mirrors.m2_options.CM508-100-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 25.4
 channel_extension_mm    = 1.0
@@ -131,6 +136,9 @@ front_bolt_offset_mm    = 8.0
 flexure_thickness_mm    = 0.80
 flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 25.4
 
 # Grating: 600 g/mm, blaze 500nm.
 
@@ -150,8 +158,10 @@ efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
 [grating_options.GR25-0605.mount]
 type                    = "grating_flexure"
 jaw_clearance_mm        = 3.0
-contact_point_width_mm  = 2.0
-contact_point_height_mm = 1.0
+optic_clearance_mm       = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 head_clearance_mm       = 5.0
 foot_clearance_mm       = 4.00
 pusher_shelf_mm         = 2.0
@@ -176,12 +186,9 @@ blade_thickness_mm      = 0.0
 type                    = "hasma_direct"
 length_mm               = 9.652
 bore_radius_mm          = 2.87
-# 1/4"-36 UNS-2B internal thread:
-#   min major = 6.350mm, max minor = 5.740mm
-#   pitch dia: min = 5.893mm, max = 5.994mm
-thread_tpi              = 36
-thread_major_dia_mm     = 6.35          # min major diameter
-pilot_bore_dia_mm       = 5.5           # must be <= internal minor (5.740mm)
+# 1/4"-36 UNS-2B: tap drill = 5.5mm (#3 drill), thread cut with tap.
+# thread_tpi / thread_major_dia_mm removed — no printed thread.
+tap_drill_dia_mm        = 5.5
 hex_half_mm             = 4.6
 boundary_mm             = 3.873
 wall_half_mm            = 12.5
@@ -229,6 +236,8 @@ description             = "3D printed black plastic flexure mount"
 vendor                  = "manufactured"
 
 # ── Detector ──────────────────────────────────────────────────────────────────
+# Pin 1 (notch) of the TCD1304 is the short-wavelength (blue) end.
+# In the KiCad STEP, pin 1 is at +X (signal-processing end of the board).
 
 [detector]
 part_number             = "TCD1304AP"
@@ -286,6 +295,7 @@ cost_usd                = 200.82
 
 [mirrors.f1_options.CCM254-025-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 12.7
 channel_extension_mm    = 1.0
@@ -302,3 +312,6 @@ front_bolt_offset_mm    = 8.0
 flexure_thickness_mm    = 0.80
 flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 12.7

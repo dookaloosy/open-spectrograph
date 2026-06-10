@@ -124,6 +124,9 @@ python3 scripts/beam_profile.py --run output/optim_<run_dir>
   `"sagittal"` for F1). No implicit defaults.
 - **Procedural CAD**: all solids generated from BOM parameters — no vendor
   STEP files shipped. See `tests/test_procedural_cad.py` for validation.
+- **Detector orientation**: pin 1 (notch) of the TCD1304 is the
+  short-wavelength (blue) end. In the KiCad STEP, pin 1 is at +X;
+  `place_in_scene_frame` maps STEP +X to raysect local +x.
 
 ## Where to find deeper context
 

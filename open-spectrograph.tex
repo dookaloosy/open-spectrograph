@@ -95,6 +95,8 @@ summarized in Table~\ref{tab:commercial}.
 
 \begin{table}[h]
 \centering
+\caption{Leading commercial miniature fiber spectrometers.}
+\label{tab:commercial}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llp{7.5cm}@{}}
 \toprule
 Manufacturer & Model(s) & Notes \\
@@ -119,17 +121,17 @@ Ibsen Photonics & Various &
   Transmission-grating-based; emphasize thermal stability. \\
 \bottomrule
 \end{tabular*}
-\caption{Leading commercial miniature fiber spectrometers.}
-\label{tab:commercial}
 \end{table}
 
 \begin{table}[h]
 \centering
+\caption{Open Spectrograph design targets.}
+\label{tab:targets}
 \begin{tabular}{@{}lll@{}}
 \toprule
 Metric & Target & Rationale \\
 \midrule
-Resolution (ILF) & $<$1\,nm FWHM & Matches USB4000 at 25\,$\mu$m slit \\
+Resolution (ILF) & $<$1\,nm EE76 & Matches USB4000 at 25\,$\mu$m slit \\
 Spectral range & 400--700\,nm & Visible band for education and analytical use \\
 Spectral coverage & $\geq$300\,nm & Single-frame, no grating rotation \\
 Throughput & $>$0.5\% & GA fitness acceptance threshold \\
@@ -138,8 +140,6 @@ RLD & $\leq$17\,nm/mm & Resolves molecular and atomic features \\
 BOM cost & $<$\$500 & $<$25\% of a Flame-series instrument \\
 \bottomrule
 \end{tabular}
-\caption{Open Spectrograph design targets.}
-\label{tab:targets}
 \end{table}
 
 These instruments share several characteristics: proprietary enclosure
@@ -202,7 +202,7 @@ built on raysect \cite{raysect} to evaluate candidate designs against
 an RMS spot-size fitness function. A genetic algorithm searches over the
 deviation angle, mirror incidence angles, fold mirror placement, and
 discrete BOM part selections. The same code path that evaluates fitness
-exports the final design as STEP and STL files, eliminating drift
+exports the final design as STEP files, eliminating drift
 between simulated and manufactured geometry.
 
 \textbf{Off-the-shelf optics, open-source electronics.} All optical
@@ -283,6 +283,8 @@ architecture) at substantially higher sensor cost ($\sim$\$550).
 
 \begin{table}[h]
 \centering
+\caption{Detector comparison: TCD1304DG vs.\ S11639-01.}
+\label{tab:detectors}
 \begin{tabular}{@{}lll@{}}
 \toprule
 Parameter & TCD1304DG & S11639-01 \\
@@ -296,15 +298,15 @@ Readout & Analog (CCD clocked) & Start + clock (CMOS) \\
 ADC & 16-bit differential (MCP33131D) & 16-bit differential \\
 \bottomrule
 \end{tabular}
-\caption{Detector comparison: TCD1304DG vs.\ S11639-01.}
-\label{tab:detectors}
 \end{table}
 
 \subsection{Instrument line function}
 
 The instrument line function (ILF) is the spectral response of the
-spectrograph to a monochromatic input; its FWHM defines the spectral
-resolution. The ILF width has two contributions: a geometric minimum
+spectrograph to a monochromatic input; its width defines the spectral
+resolution. We characterise the ILF by EE76: the narrowest
+contiguous interval containing 76\% of hits, equivalent to a Gaussian
+FWHM\@. The ILF width has two contributions: a geometric minimum
 (the fiber image width projected through the dispersion) and aberration
 broadening from off-axis mirror use. We target mean RMS spot radius as
 the fitness metric because it captures both in a single scalar;
@@ -562,7 +564,7 @@ $\swarrow$ & $\searrow$ \\[2pt]
   \scriptsize Forward trace\\[-2pt]
   \scriptsize per fitness $\lambda$\end{tabular}}
 &
-\fbox{\begin{tabular}{c}STEP / STL export\\[-2pt]
+\fbox{\begin{tabular}{c}STEP export\\[-2pt]
   \scriptsize Housing, mounts,\\[-2pt]
   \scriptsize optic solids\end{tabular}}
 \\[2pt] $\downarrow$ & \\[2pt]
@@ -575,7 +577,7 @@ $\swarrow$ & $\searrow$ \\[2pt]
 \end{tabular}
 \caption{Simulation pipeline. The Scene is consumed by two independent
 paths: raysect for ray tracing and fitness evaluation, and build123d for
-solid-model STEP/STL export.}
+solid-model STEP export.}
 \label{fig:pipeline}
 \end{figure}
 
@@ -583,7 +585,7 @@ All configuration is declarative: a BOM file
 (e.g.\ \texttt{czerny\_bom\_v0\_design.toml}) catalogs available parts, a
 baseline file (\texttt{czerny\_baseline\_v0\_design.toml}) specifies part
 selections and genome parameters, and \texttt{defaults.toml} sets sweep
-parameters. Switching \texttt{--bom} to a different catalog (spherical,
+parameters. Switching \texttt{{-}{-}bom} to a different catalog (spherical,
 cylindrical) produces a different instrument class without touching
 source code.
 
@@ -627,6 +629,12 @@ $\theta_{M1} \neq \alpha$ in general.
 
 \begin{table}[h]
 \centering
+\caption{Czerny-Turner design parameters. DoFs 1--9 are always
+present; DoFs 10--11 are present only when a fold mirror is active. The
+deviation angle ($D_v = \alpha + \beta$) and BOM part selection are
+also GA-evolved; they determine $\alpha$, $\beta$ via the grating
+equation.}
+\label{tab:genome}
 \small
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}clll@{}}
 \toprule
@@ -645,12 +653,6 @@ DoF & Symbol & Description & Role \\
 11 & $L_{F1}$ & M1 to F1 distance & Derived (Eq.~\ref{eq:astig-free} or feasible-band midpoint) \\
 \bottomrule
 \end{tabular*}
-\caption{Czerny-Turner design parameters. DoFs 1--9 are always
-present; DoFs 10--11 are present only when a fold mirror is active. The
-deviation angle ($D_v = \alpha + \beta$) and BOM part selection are
-also GA-evolved; they determine $\alpha$, $\beta$ via the grating
-equation.}
-\label{tab:genome}
 \end{table}
 
 \subsubsection{Physics-seeded optimization}
@@ -702,11 +704,14 @@ changes.
 
 The manufactured output is a single 3D-printed housing that serves as
 both structural chassis and light-tight enclosure.  Optic mounts bolt to
-the housing floor via screws; the HASMA fiber adapter threads directly
-into the entrance wall.  Each mount integrates single-axis pitch
-adjustment via a living-hinge flexure (0.8\,mm web), with a
-setscrew-driven foot trimmed at 2\textdegree{} to preload the hinge.
-Two mount types cover the optical train: mirror (round) and grating
+the housing floor via screws; the HASMA fiber adapter threads into the
+entrance wall via a 1/4''-36 tapped hole (tap drill printed, tapped
+post-print with a conical tap guide fixture).  Each mount integrates
+single-axis pitch adjustment via a living-hinge flexure (0.8\,mm web),
+with a setscrew-driven foot trimmed at 2\textdegree{} to preload the
+hinge.  Captive TPU contact bumps provide three-point optic retention;
+the top setscrew preloads the optic against the two bottom bumps.  Two
+mount types cover the optical train: mirror (round) and grating
 (square).  When no vendor STEP file is registered for a given optic, the
 exporter generates a procedural solid from the BOM's geometry parameters
 (radius of curvature, diameter, thickness) using build123d CSG
@@ -1014,15 +1019,15 @@ prototype.}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_4_v0-model.png}
-\caption{CAD model of the v0.2.0 assembly.}
+\caption{CAD model of the v0.3.0 assembly.}
 \label{fig:v0-model}
 \end{figure}
 
 \subsection{Optical train}
 
-The v0 optical train is an aberration-corrected Czerny-Turner with a cylindrical
-collimator (M1), sagittal cylindrical fold mirror (F1), and spherical
-focuser (M2):
+The v0 optical train is an aberration-corrected Czerny-Turner with a
+tangential cylindrical collimator (M1), sagittal cylindrical
+collimator (F1), and spherical focuser (M2):
 
 \begin{center}
 \begin{tabular}{@{}lllr@{}}
@@ -1085,6 +1090,8 @@ mirrors, and the shortest available focal length is $f = 25$\,mm
 geometry, forcing the optimizer into steeper incidence angles and a
 wider layout with higher residual aberrations at the band edges.
 
+\subsection{Performance}
+
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_5a_v0_spot_pt.png}\\[0.5em]
@@ -1093,28 +1100,29 @@ wider layout with higher residual aberrations at the band edges.
 wavelength pair separated by $\Delta\lambda = 0.5$\,nm (green and
 blue).  Top: point source (optical aberrations only).  Bottom:
 25\,$\mu$m fiber source (slit-limited).  The pairs are resolved at all
-three wavelengths in both cases, confirming sub-1\,nm ILF FWHM
+three wavelengths in both cases, confirming sub-1\,nm ILF
 across the band.  RMS annotation refers to the primary wavelength only.}
 \label{fig:v0-spot-panel}
 \end{figure}
 
-\subsection{Performance}
-
-\begin{center}
+\begin{table}[ht!]
+\centering
+\caption{v0 spot size and ILF performance at three wavelengths.}
+\label{tab:v0-performance}
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
 & \multicolumn{2}{c}{Point source} & \multicolumn{2}{c}{25\,$\mu$m fiber} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 $\lambda$ (nm) & RMS ($\mu$m) & ILF (nm) & RMS ($\mu$m) & ILF (nm) \\
 \midrule
-400 & 41.0 & 0.65 & 46.6 & 0.78 \\
-550 & 19.9 & 0.25 & 31.3 & 0.25 \\
-700 & 58.4 & 0.12 & 63.1 & 0.48 \\
+400 & 41.1 & 0.68 & 46.8 & 0.74 \\
+550 & 20.1 & 0.36 & 30.9 & 0.51 \\
+700 & 58.5 & 0.73 & 63.3 & 0.85 \\
 \midrule
-Mean & 39.8 & 0.34 & 47.0 & 0.50 \\
+Mean & 39.9 & 0.59 & 47.0 & 0.70 \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Figure~\ref{fig:v0-spot-panel} shows the v0 spot diagrams:
 point source (top) and 25\,$\mu$m fiber source (bottom).  Both were
@@ -1132,54 +1140,143 @@ python scripts/spot\_panel.py \textbackslash\\
 
 \subsection{Assembly tolerance budget}
 
-A one-at-a-time tolerance sweep perturbs each physical dimension
-$\pm 5\%$ around nominal and measures both mean RMS spot size and
-mean ILF FWHM (400, 550, 700\,nm; point source; 5\,000 rays per
-wavelength).  Axis rotation slopes are computed from one-sided
-perturbation (the sensitivity is symmetric).
+A true one-at-a-time (OAT) sweep perturbs each physical dimension
+independently --- angular tilts $\pm 2$\textdegree, layout distances
+$\pm 5\%$ --- without recomputing downstream positions, and records
+the ILF (encircled-energy width containing 76\% of hits, equivalent
+to Gaussian FWHM) at each point.  For each axis the table reports the
+maximum perturbation that keeps the ILF below 1\,nm:
+
+\medskip
+\hspace{2em}\texttt{python scripts/tolerance.py {-}{-}rays 100000 {-}{-}n\_points 11 {-}{-}ilf\_target 1.0}
+\medskip
 
 \begin{table}[ht]
-\centering\small
-\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}clrll@{}}
-\toprule
- & Parameter & Nominal & RMS slope & ILF slope \\
-\midrule
-1 & F1 axis rotation  & 90\textdegree   & 44.5\,$\mu$m/\textdegree  & 1.476\,nm/\textdegree \\
-2 & M1 axis rotation  & 0\textdegree    & 32.0\,$\mu$m/\textdegree  & 1.154\,nm/\textdegree \\
-3 & $\theta_{F1}$      & 24.4\textdegree & 2.8\,$\mu$m/\textdegree   & 0.001\,nm/\textdegree \\
-4 & $L_A$              & 86.6\,mm       & 2.0\,$\mu$m/mm            & 0.100\,nm/mm \\
-5 & $L_{F1}$           & 59.5\,mm       & 1.7\,$\mu$m/mm            & 0.018\,nm/mm \\
-6 & $L_B$              & 109.3\,mm      & 1.1\,$\mu$m/mm            & 0.210\,nm/mm \\
-7 & $\theta_D$         & 9.2\textdegree & 0.5\,$\mu$m/\textdegree   & 0.129\,nm/\textdegree \\
-8 & $L_{M1}$           & 86.9\,mm       & 0.1\,$\mu$m/mm            & 0.012\,nm/mm \\
-9 & $L_{M2}$           & 83.8\,mm       & ${\sim}$0                 & 0.050\,nm/mm \\
-\bottomrule
-\end{tabular*}
-\caption{v0 assembly tolerance budget.  RMS slope is the mean spot
-  degradation; ILF slope is the mean ILF FWHM degradation, both per
-  unit of misalignment.  Axis rotation is the rotation of a cylindrical
-  mirror about its optical axis.}
+\centering
+\caption{v0 assembly tolerance budget (ILF $< 1$\,nm).}
 \label{tab:v0-tolerance}
+\small
+\begin{tabular}{rclrrl}
+\toprule
+Rank & Symbol & Description & Nominal & Budget & Category \\
+\midrule
+ 1 & $L_{F1}$         & M1 to F1 distance             & 59.5\,mm        & $\pm$0.12\,mm        & tight \\
+ 2 & $L_A$            & Slit to M1 distance           & 86.6\,mm        & $\pm$0.21\,mm        & tight \\
+ 3 & $L_{M1}$         & Grating to M1 distance        & 86.9\,mm        & $\pm$0.22\,mm        & tight \\
+ 4 & $L_B$            & M2 to detector distance       & 109.3\,mm       & $\pm$0.24\,mm        & tight \\
+ 5 & $L_{M2}$         & Grating to M2 distance        & 83.8\,mm        & $\pm$0.27\,mm        & tight \\
+ 6 & $\theta_{M2}$    & M2 incidence angle            & 15.4\textdegree & $\pm$0.28\textdegree & tight \\
+ 7 & $\theta_{M1}$    & M1 incidence angle            & 12.5\textdegree & $\pm$0.41\textdegree & moderate \\
+ 8 & $\varphi_{F1}$   & F1 cylinder axis orientation  & 90\textdegree   & $\pm$0.48\textdegree & moderate \\
+ 9 & $\varphi_{M1}$   & M1 cylinder axis orientation  & 0\textdegree    & $\pm$0.57\textdegree & moderate \\
+10 & $\alpha$          & Grating incidence angle       & 3.5\textdegree  & $\pm$1.94\textdegree & relaxed \\
+11 & $\theta_{F1}$    & F1 fold incidence angle       & 24.4\textdegree & $>\pm$2\textdegree   & relaxed \\
+12 & $\theta_D$       & Detector tilt                 & 9.2\textdegree  & $>\pm$1\textdegree   & relaxed \\
+\bottomrule
+\end{tabular}
 \end{table}
 
-Cylinder axis rotation (ranks~1--2) is the only assembly-critical
-parameter: F1 degrades ILF by 1.5\,nm per degree of axis error,
-consuming the full resolution budget at $\sim$0.3\textdegree.
-Round Thorlabs blanks require an alignment procedure to achieve
-this.  All other parameters (ranks~3--9) are comfortably within
-FDM print accuracy and do not require special attention during
-assembly.
+Layout distances (ranks~1--5) have the tightest budgets: $L_{F1}$
+must be held to $\pm 0.12$\,mm, and all arm lengths to
+$\sim \pm 0.25$\,mm.  The M2 incidence angle $\theta_{M2}$ is
+comparably tight at $\pm 0.28$\textdegree.  The cylinder axis
+orientations $\varphi_{M1}$ and $\varphi_{F1}$ (ranks~8--9)
+tolerate $\sim \pm 0.5$\textdegree\ deviation.  The grating
+incidence angle~$\alpha$, fold angle~$\theta_{F1}$, and detector
+tilt~$\theta_D$ are relaxed and do not require special attention
+during assembly.
+
+\subsection{Printable parts}
+
+All printable parts are generated procedurally from BOM parameters
+and exported with:
+
+\medskip
+\hspace{2em}\texttt{python export.py {-}{-}baseline data/czerny\_baseline\_v0\_design.toml {-}{-}cad}
+\medskip
+
+\subsubsection{Housing and mounts}
+
+\begin{table}[h!]
+\centering
+\caption{Printable housing and mount parts.}
+\label{tab:printable-parts}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll@{}}
+\toprule
+Part & File & Material & Notes \\
+\midrule
+Housing & \texttt{housing.step} & PLA/PETG & Unibody chassis + light-tight enclosure \\
+Top cover & \texttt{top\_cover.step} & PLA/PETG & Snap-fit lid with embossed ray path \\
+Detector cover & \texttt{detector\_cover.step} & PLA/PETG & Shields detector pocket \\
+Bottom cover & \texttt{bottom\_cover.step} & PLA/PETG & Base plate with screw holes \\
+F1 mount & \texttt{f1\_mount.step} & PLA/PETG & Sagittal cylindrical collimator mount \\
+M1 mount & \texttt{m1\_mount.step} & PLA/PETG & Tangential cylindrical collimator mount \\
+M2 mount & \texttt{m2\_mount.step} & PLA/PETG & Spherical focuser mount \\
+Grating mount & \texttt{grating\_mount.step} & PLA/PETG & Ruled grating mount \\
+Contact bumps & (in mounts) & TPU & Captive cylinders, three per mount \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+Each mount includes captive TPU contact bumps (three per mount) for
+setscrew-preloaded three-point retention.  The HASMA bore prints as a
+5.5\,mm tap drill hole; the 1/4''-36 thread is tapped post-print.
+
+\subsubsection{Assembly fixtures}
+
+\begin{table}[h!]
+\centering
+\caption{Assembly fixtures.}
+\label{tab:fixtures}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll@{}}
+\toprule
+Fixture & File & Material & Purpose \\
+\midrule
+M1 fixture & \texttt{m1\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
+M2 fixture & \texttt{m2\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
+F1 fixture & \texttt{f1\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
+Grating fixture & \texttt{grating\_fixture.step} & PLA/PETG & Holds grating during assembly \\
+HASMA tap guide & \texttt{hasma\_tap\_fixture.step} & PLA/PETG & Guides 1/4''-36 tap through bore \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+Each fixture envelopes the mount and optic with a 1\,mm contact lip,
+through-cuts beneath the foot tongue and pusher shelf to prevent
+bottoming out, and a setscrew access hole.  The HASMA tap guide is a
+1'' cone matching the housing flare, with a 1/4'' through bore for tap
+alignment.
+
+\subsection{Results}
+
+Figure~\ref{fig:cfl-spectrum} shows a compact fluorescent lamp (CFL)
+spectrum captured with the assembled v0.3.0 instrument.  The mercury emission lines are well resolved; a Gaussian fit to the
+isolated 405\,nm line gives FWHM~$= 0.86$\,nm, meeting the
+sub-1\,nm design target.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_6_cfl_spectrum.png}
+\caption{CFL spectrum captured with the v0.3.0 spectrograph.  50\,ms
+exposure, 100-frame average, 25\,$\mu$m SMA-905 fiber input.
+Wavelength calibrated from Hg reference lines.}
+\label{fig:cfl-spectrum}
+\end{figure}
 
 \subsection{Summary}
 
 \begin{table}[h!]
 \centering
+\caption{The v0 design summary.}
+\label{tab:v0-summary}
 \small
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllp{4.5cm}@{}}
 \toprule
 Metric & Target & Achieved & Notes \\
 \midrule
-Resolution (ILF) & $<$1\,nm FWHM & 0.25--0.78\,nm & 25\,$\mu$m fiber source \\
+Resolution (ILF) & $<$1\,nm EE76 & 0.51--0.85\,nm & 25\,$\mu$m fiber source \\
 Spectral range & 400--700\,nm & 350--750\,nm & Grating eff.\ \& mirror refl.\ \\
 Spectral coverage & $\geq$300\,nm & 420\,nm & TCD1304 at 14.5\,nm/mm \\
 Throughput & $>$0.5\% & 22--41\% & All losses, $\lambda$-dependent \\
@@ -1189,8 +1286,6 @@ BOM cost & $<$\$500 & \$912 & \textbf{Exceeds target by 82\%} \\
 Full assembly size & --- & 157$\times$172$\times$99\,mm & 3D printed housing \\
 \bottomrule
 \end{tabular*}
-\caption{The v0 design summary.}
-\label{tab:v0-summary}
 \end{table}
 
 The v0 design meets the resolution target (ILF $<$ 1\,nm) and the

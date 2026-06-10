@@ -19,7 +19,11 @@ function traces is what gets exported as printable STEP files.
 ```
 
 **Key specs:** ~15 nm/mm dispersion, 400-700 nm band, <1 nm resolution
-(ILF FWHM), <$500 BOM target.
+(0.86 nm FWHM measured at 405 nm Hg line).
+
+![v0.3.0 CAD model](figures/fig_4_v0-model.png)
+
+![CFL spectrum — v0.3.0](figures/fig_6_cfl_spectrum.png)
 
 ## Setup
 
@@ -68,7 +72,7 @@ Section sources in `docs/`:
 ## License
 
 Software (source code, scripts, simulation): [MIT](LICENSES/MIT.txt)
-Hardware (STEP files, STL files, BOM, mechanical designs): [CERN-OHL-P v2](LICENSES/CERN-OHL-P-2.0.txt)
+Hardware (STEP files, BOM, mechanical designs): [CERN-OHL-P v2](LICENSES/CERN-OHL-P-2.0.txt)
 
 Third-party vendor STEP files are not included due to redistribution
 restrictions. Optic solids are generated procedurally from BOM parameters.

@@ -116,6 +116,7 @@ class RoundMirrorFlexureMountParams:
     living-hinge web at the rear wall.
     """
     # -- optic retention --
+    optic_clearance_mm: float       # additional diametral bore clearance
     shoulder_width_mm: float       # annular shoulder width in bore
     channel_width_mm: float        # extraction channel width at bottom
     channel_extension_mm: float    # channel circle oversize beyond bore radius
@@ -135,6 +136,10 @@ class RoundMirrorFlexureMountParams:
     flexure_thickness_mm: float    # thin web dimension in u (layer-height controlled)
     flexure_gap_mm: float          # relief gap height (blade bending length)
     trim_angle_deg: float          # foot bottom trim angle for pitch preload
+    # -- contact bumps (TPU, captive in bore pockets) --
+    contact_radius_mm: float       # bump cylinder radius
+    contact_offset_mm: float       # protrusion past bore wall into bore
+    contact_separation_mm: float   # v-distance between the two bottom bumps
 
 
 @dataclass(frozen=True)
@@ -147,8 +152,10 @@ class GratingFlexureMountParams:
     """
     # -- optic retention --
     jaw_clearance_mm: float        # jaw arm material above/below grating edge
-    contact_point_width_mm: float  # width of each raised bottom contact
-    contact_point_height_mm: float # proud height of bottom contacts
+    optic_clearance_mm: float       # additional pocket clearance (diametral)
+    contact_radius_mm: float       # bump cylinder radius
+    contact_offset_mm: float       # protrusion past pocket wall into pocket
+    contact_separation_mm: float   # v-distance between the two bottom bumps
     # -- slab geometry --
     head_clearance_mm: float       # material above grating edge to top face
     foot_clearance_mm: float       # material below grating edge to slab bottom

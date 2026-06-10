@@ -366,8 +366,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-1205.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -405,8 +406,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-1208.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -444,8 +446,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-1210.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -479,8 +482,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-1205.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -514,8 +518,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-1208.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -549,8 +554,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-1210.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -585,8 +591,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -620,8 +627,9 @@ efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 4.00          # material below grating edge to slab bottom
@@ -657,8 +665,9 @@ efficiency_file         = "data/efficiency/efficiency_GR50A-0605.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 3.40          # material below grating edge to slab bottom
@@ -699,8 +708,9 @@ efficiency_file         = "data/efficiency/efficiency_GH50-12V.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 3.40          # material below grating edge to slab bottom
@@ -740,8 +750,9 @@ efficiency_file         = "data/efficiency/efficiency_EO43-006.csv"
 type                    = "grating_flexure"
 # -- optic retention --
 jaw_clearance_mm        = 3.0           # jaw arm material above/below grating edge
-contact_point_width_mm  = 2.0           # width of each raised bottom contact bump
-contact_point_height_mm = 1.0           # proud height of bottom contact bumps
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 # -- slab geometry --
 head_clearance_mm       = 5.0           # material above grating edge to top face
 foot_clearance_mm       = 3.40          # material below grating edge to slab bottom
@@ -860,6 +871,7 @@ cost_usd                = 42.60
 [mirrors.f1_options.PF05-03-G01.mount]
 # Same mirror_flexure as CM127 (12.7mm spherical), scaled for 6mm-thick flat.
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 6.35
 channel_extension_mm    = 1.0
@@ -892,6 +904,7 @@ cost_usd                = 57.21
 [mirrors.f1_options.PF07-03-G01.mount]
 # Same mirror_flexure as curved mirrors, scaled for 19.05mm Ø × 6mm flat.
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 9.525
 channel_extension_mm    = 1.0
@@ -927,6 +940,7 @@ cost_usd                = 60.20
 [mirrors.f1_options.PF10-03-G01.mount]
 # Same mirror_flexure as CM254 (25.4mm spherical), scaled for 6mm-thick flat.
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 12.7
 channel_extension_mm    = 1.0
@@ -955,6 +969,7 @@ cost_usd                = 115.68
 
 [mirrors.f1_options.PF20-03-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 25.4
 channel_extension_mm    = 1.0
@@ -982,6 +997,7 @@ cost_usd                = 42.60
 
 [mirrors.f2_options.PF05-03-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 6.35
 channel_extension_mm    = 1.0
@@ -1009,6 +1025,7 @@ cost_usd                = 57.21
 
 [mirrors.f2_options.PF07-03-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 9.525
 channel_extension_mm    = 1.0
@@ -1036,6 +1053,7 @@ cost_usd                = 60.20
 
 [mirrors.f2_options.PF10-03-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 12.7
 channel_extension_mm    = 1.0
@@ -1063,6 +1081,7 @@ cost_usd                = 115.68
 
 [mirrors.f2_options.PF20-03-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 25.4
 channel_extension_mm    = 1.0

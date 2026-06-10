@@ -38,7 +38,7 @@ World builder              CAD builder
     |  Scene → raysect         |  Scene → build123d
     |  World (mm → m)          |  solids (mm-native)
     v                          v
-Ray tracing                STEP / STL export
+Ray tracing                STEP export
     |  Forward trace           |  Housing, mounts,
     |  per fitness λ           |  optic solids
     v                          v
@@ -272,10 +272,13 @@ layout and rebuild automatically when the optical train changes.
 
 The manufactured output is a single 3D-printed housing that serves as
 both structural chassis and light-tight enclosure. Optic mounts bolt to
-the housing floor via screws; the HASMA fiber adapter threads directly
-into the entrance wall. Each mount integrates single-axis pitch
-adjustment via a living-hinge flexure (0.8 mm web), with a
-setscrew-driven foot trimmed at 2° to preload the hinge. Two mount
+the housing floor via screws; the HASMA fiber adapter threads into the
+entrance wall via a 1/4"-36 tapped hole (tap drill printed, tapped
+post-print with a conical tap guide fixture). Each mount integrates
+single-axis pitch adjustment via a living-hinge flexure (0.8 mm web),
+with a setscrew-driven foot trimmed at 2° to preload the hinge.
+Captive TPU contact bumps provide three-point optic retention; the top
+setscrew preloads the optic against the two bottom bumps. Two mount
 types cover the optical train: mirror (round) and grating (square).
 When no vendor STEP file is registered for a given optic, the exporter
 generates a procedural solid from the BOM's geometry parameters (radius

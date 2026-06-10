@@ -62,7 +62,7 @@ to evaluate candidate designs against an RMS spot-size fitness function.
 A genetic algorithm searches over the deviation angle, mirror incidence
 angles, fold mirror placement, and discrete BOM part selections. The
 same code path that evaluates fitness exports the final design as STEP
-and STL files, eliminating drift between simulated and manufactured
+files, eliminating drift between simulated and manufactured
 geometry.
 
 **Off-the-shelf optics, open-source electronics.** All optical elements

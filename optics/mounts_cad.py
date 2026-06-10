@@ -38,6 +38,7 @@ from build123d import (
     Color,
     Cone,
     Cylinder,
+    FontStyle,
     GeomType,
     Location,
     Locations,
@@ -50,7 +51,9 @@ from build123d import (
     RectangleRounded,
     Sphere,
     Rot,
+    Text,
     Until,
+    Vector,
     chamfer,
     extrude,
     export_step,
@@ -168,50 +171,32 @@ def build_mirror_flexure_mount_cad(
         z_dir=(0, tilt_cos, -tilt_sin),
     )
 
+    # -- bore geometry (needed by both hull and internal features) --
+    front_bore_depth_mm = u_vertex - u_shoulder
+    bore_r = 0.5 * (front_bore_dia_mm + params.optic_clearance_mm)
+    contact_radius_mm = params.contact_radius_mm
+    contact_offset_mm = params.contact_offset_mm
+    v_contact_mm = 0.5 * params.contact_separation_mm
+    u_mid = u_wall_rear + 0.5 * slab_total_u_mm
+
     with BuildPart() as mount:
+        # ── Outer contour ─────────────────────────────────────────────
+
         # 1. Tombstone stock: sketch rear cross-section, extrude forward.
         with BuildSketch(rear_plane) as stock_sk:
             with Locations(Pos(0, w_center)):
                 Rectangle(2 * v_half_mm, full_height_mm)
         extrude(stock_sk.sketch, amount=slab_total_u_mm)
 
-        # 2. Cut bore: upper circle + wider lower circle with contact bumps.
-        front_bore_depth_mm = u_vertex - u_shoulder
-        upper_r = 0.5 * front_bore_dia_mm
-        contact_radius_mm = 1.0
-        lower_r = upper_r + contact_radius_mm
-        v_contact_mm = optic_radius_mm * 0.5
-        with BuildSketch(bore_plane) as bore_sk:
-            Circle(lower_r)
-            Rectangle(2 * lower_r, lower_r,
-                      align=(Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
-            Circle(upper_r)
-            with Locations(Pos(0, 0)):
-                Rectangle(2 * v_half_mm + 0.2, 0.75 * optic_diameter_mm,
-                          align=(Align.CENTER, Align.CENTER))
-            w_bump = -math.sqrt(lower_r**2 - v_contact_mm**2)
-            with Locations(Pos(-v_contact_mm, w_bump),
-                           Pos(+v_contact_mm, w_bump)):
-                Circle(contact_radius_mm, mode=Mode.SUBTRACT)
-            bump_verts = [
-                v for v in bore_sk.vertices()
-                if v.Y < w_bump + contact_radius_mm + 0.1
-                and (abs(v.X - v_contact_mm) < contact_radius_mm + 0.5
-                     or abs(v.X + v_contact_mm) < contact_radius_mm + 0.5)
-            ]
-            if bump_verts:
-                fillet2d(bump_verts, radius=contact_radius_mm)
-        extrude(bore_sk.sketch, amount=front_bore_depth_mm,
-                mode=Mode.SUBTRACT)
-
-        # Setscrew insert bore from top (blind — 0.5mm floor above bore).
-        ss_bore_depth_mm = (w_top - upper_r) - _SETSCREW_FLOOR_MM
-        top_face = mount.faces().sort_by(Axis.Y)[-1]
-        u_mid = u_wall_rear + 0.5 * slab_total_u_mm
-        with BuildSketch(top_face) as ss_sk:
-            with Locations(Pos(0, -(u_setscrew - u_mid))):
-                Circle(radius=0.5 * mfg.insert_bore_dia_mm)
-        extrude(ss_sk.sketch, amount=-ss_bore_depth_mm, mode=Mode.SUBTRACT)
+        # 2. Side cuts: trim mount flush with mirror diameter.
+        side_excess_mm = v_half_mm - optic_radius_mm
+        if side_excess_mm > 0:
+            for sign in (+1, -1):
+                v_cut = sign * (optic_radius_mm + 0.5 * side_excess_mm)
+                with Locations(Pos(v_cut, w_center,
+                                   u_wall_rear + 0.5 * slab_total_u_mm)):
+                    Box(side_excess_mm, full_height_mm, slab_total_u_mm,
+                        mode=Mode.SUBTRACT)
 
         # 3. Face mill (sketched on body front face).
         front_face = mount.faces().sort_by(Axis.Z)[-1]
@@ -222,25 +207,7 @@ def build_mirror_flexure_mount_cad(
                 Rectangle(2 * v_half_mm, w_top - w_bot)
         extrude(mill_sk.sketch, amount=-mill_depth_mm, mode=Mode.SUBTRACT)
 
-        # 4. Foot screw pilot holes (sketched on body bottom face).
-        foot_pilot_dia_mm = mfg.bolt_dims[params.foot_bolt_thread]["tap_drill_dia_mm"]
-        foot_bottom_face = (mount.faces()
-                            .filter_by(Axis.Y).sort_by(Axis.Y)[0])
-        for bv, bu in [(+v_bolt, u_bolt), (-v_bolt, u_bolt),
-                        (0, u_front_bolt)]:
-            with BuildSketch(foot_bottom_face) as ins_sk:
-                with Locations(Pos(bv, bu - u_mid)):
-                    Circle(radius=0.5 * foot_pilot_dia_mm)
-            extrude(ins_sk.sketch, amount=-params.foot_thickness_mm,
-                    mode=Mode.SUBTRACT)
-        # Pusher insert bore (through foot).
-        with BuildSketch(foot_bottom_face) as push_sk:
-            with Locations(Pos(0, u_pusher - u_mid)):
-                Circle(radius=0.5 * mfg.insert_bore_dia_mm)
-        extrude(push_sk.sketch, amount=-params.foot_thickness_mm,
-                mode=Mode.SUBTRACT)
-
-        # 5. Shape the foot (sketched on body bottom face).
+        # 4. Shape the foot (sketched on body bottom face).
         foot_face = (mount.faces()
                      .filter_by(Axis.Y).sort_by(Axis.Y)[0])
         foot_u_mid = foot_face.center().Z
@@ -264,71 +231,7 @@ def build_mirror_flexure_mount_cad(
         extrude(foot_sk.sketch, amount=-(w_top - w_foot_bot),
                 mode=Mode.INTERSECT)
 
-        # 6. Flexure relief: sketch on flexure front face, extrude forward.
-        u_flexure_front = u_wall_rear + params.flexure_thickness_mm
-        flexure_u_mm = u_foot_front - u_flexure_front
-        flexure_plane = Plane(origin=(0, 0, u_flexure_front),
-                              x_dir=(1, 0, 0), z_dir=(0, 0, 1))
-        with BuildSketch(flexure_plane) as flex_sk:
-            w_flexure_mid = w_bot - 0.5 * params.flexure_gap_mm
-            with Locations(Pos(0, w_flexure_mid)):
-                Rectangle(2 * v_half_mm, params.flexure_gap_mm)
-        extrude(flex_sk.sketch, until=Until.LAST, mode=Mode.SUBTRACT)
-
-        # 7. Trim foot bottom: wedge triangle in u-w plane, extrude in v.
-        trim_u_end = u_foot_front + boss_width_mm
-        trim_u_span = trim_u_end - u_wall_rear
-        wedge_rise = trim_u_span * math.tan(
-            math.radians(params.trim_angle_deg))
-        uw_plane = Plane(origin=(0, w_foot_bot, 0),
-                         x_dir=(0, 0, 1), z_dir=(-1, 0, 0))
-        with BuildSketch(uw_plane) as trim_sk:
-            Polygon(
-                (u_wall_rear, 0),
-                (trim_u_end, 0),
-                (trim_u_end, wedge_rise),
-                align=None,
-            )
-        extrude(trim_sk.sketch, until=Until.LAST, both=True,
-                mode=Mode.SUBTRACT)
-
-        # 8. Side cuts: trim mount flush with mirror diameter.
-        side_excess_mm = v_half_mm - optic_radius_mm
-        if side_excess_mm > 0:
-            for sign in (+1, -1):
-                v_cut = sign * (optic_radius_mm + 0.5 * side_excess_mm)
-                with Locations(Pos(v_cut, w_center,
-                                   u_wall_rear + 0.5 * slab_total_u_mm)):
-                    Box(side_excess_mm, full_height_mm, slab_total_u_mm,
-                        mode=Mode.SUBTRACT)
-
-        # 9. Chamfers on insert holes.
-        chamfer_top_r = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
-        chamfer_bot_r = 0.5 * mfg.insert_bore_dia_mm
-        # Setscrew chamfer from top (flat, unaffected by tilt).
-        with Locations(Pos(0, w_top - 0.5 * mfg.insert_chamfer_mm, u_setscrew)):
-            Cone(bottom_radius=chamfer_top_r, top_radius=chamfer_bot_r,
-                 height=mfg.insert_chamfer_mm, rotation=(90, 0, 0),
-                 mode=Mode.SUBTRACT)
-        # Pusher insert chamfer on the tilted surface.
-        tilted_fwd = tilted_surface_plane.y_dir * -1
-        tilted_n = tilted_surface_plane.z_dir
-        chamfer_rot = (90 - params.trim_angle_deg, 0, 0)
-        for cv, cu in [(0, u_pusher)]:
-            surf = (tilted_surface_plane.origin
-                    + tilted_surface_plane.x_dir * cv
-                    + tilted_fwd * (cu - u_wall_rear))
-            ctr = surf + tilted_n * (0.5 * mfg.insert_chamfer_mm)
-            with Locations(Pos(ctr.X, ctr.Y, ctr.Z)):
-                Cone(bottom_radius=chamfer_bot_r,
-                     top_radius=chamfer_top_r,
-                     height=mfg.insert_chamfer_mm,
-                     rotation=chamfer_rot, mode=Mode.SUBTRACT)
-
-
-    # Pusher shelf: semicircular lip above w_bot at u_pusher so the
-    # setscrew can't slip past the flexure lip when it opens.
-    # Built outside BuildPart to avoid coplanar boolean issues.
+    # 5. Pusher shelf (fused outside BuildPart to avoid coplanar issues).
     _shelf_plane = Plane(
         origin=(0, w_bot, u_pusher),
         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
@@ -350,7 +253,131 @@ def build_mirror_flexure_mount_cad(
             result = result.fillet(_shelf_fillet_r, _fillet_edges)
         except Exception:
             pass
+
+    # 6. Flexure relief: sketch on flexure front face, extrude forward.
+    # 7. Trim foot bottom: wedge triangle in u-w plane, extrude in v.
+    # These modify the outer contour but need to run after the shelf
+    # fuse, so they operate on `result` via a fresh BuildPart.
+    with BuildPart() as mount2:
+        mount2._obj = result
+
+        u_flexure_front = u_wall_rear + params.flexure_thickness_mm
+        flexure_u_mm = u_foot_front - u_flexure_front
+        flexure_plane = Plane(origin=(0, 0, u_flexure_front),
+                              x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+        with BuildSketch(flexure_plane) as flex_sk:
+            w_flexure_mid = w_bot - 0.5 * params.flexure_gap_mm
+            with Locations(Pos(0, w_flexure_mid)):
+                Rectangle(2 * v_half_mm, params.flexure_gap_mm)
+        extrude(flex_sk.sketch, until=Until.LAST, mode=Mode.SUBTRACT)
+
+        trim_u_end = u_foot_front + boss_width_mm
+        trim_u_span = trim_u_end - u_wall_rear
+        wedge_rise = trim_u_span * math.tan(
+            math.radians(params.trim_angle_deg))
+        uw_plane = Plane(origin=(0, w_foot_bot, 0),
+                         x_dir=(0, 0, 1), z_dir=(-1, 0, 0))
+        with BuildSketch(uw_plane) as trim_sk:
+            Polygon(
+                (u_wall_rear, 0),
+                (trim_u_end, 0),
+                (trim_u_end, wedge_rise),
+                align=None,
+            )
+        extrude(trim_sk.sketch, until=Until.LAST, both=True,
+                mode=Mode.SUBTRACT)
+
+        # ── Internal features ─────────────────────────────────────────
+
+        # 8. Cut bore: upper circle + wider lower circle with contact
+        # bump pockets.  The bumps themselves are separate TPU bodies.
+        bump_center_r = bore_r + contact_radius_mm - contact_offset_mm
+        w_bump = -math.sqrt(bump_center_r**2 - v_contact_mm**2)
+        with BuildSketch(bore_plane) as bore_sk:
+            Circle(bore_r)
+            Rectangle(2 * bore_r, bore_r,
+                      align=(Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+            Circle(bore_r)
+            with Locations(Pos(0, 0)):
+                Rectangle(2 * v_half_mm + 0.2, 0.75 * optic_diameter_mm,
+                          align=(Align.CENTER, Align.CENTER))
+            with Locations(Pos(-v_contact_mm, w_bump),
+                           Pos(+v_contact_mm, w_bump),
+                           Pos(0, bump_center_r)):
+                Circle(contact_radius_mm)
+        extrude(bore_sk.sketch, amount=front_bore_depth_mm,
+                mode=Mode.SUBTRACT)
+
+        # 9. Setscrew insert bore from top (blind).
+        ss_bore_depth_mm = (w_top - bore_r) - _SETSCREW_FLOOR_MM
+        ss_plane = Plane(origin=(0, w_top, 0),
+                         x_dir=(1, 0, 0), z_dir=(0, -1, 0))
+        with BuildSketch(ss_plane) as ss_sk:
+            with Locations(Pos(0, u_setscrew)):
+                Circle(radius=0.5 * mfg.insert_bore_dia_mm)
+        extrude(ss_sk.sketch, amount=ss_bore_depth_mm, mode=Mode.SUBTRACT)
+
+        # 10. Foot screw pilot holes.
+        foot_pilot_dia_mm = mfg.bolt_dims[params.foot_bolt_thread]["tap_drill_dia_mm"]
+        foot_hole_plane = Plane(origin=(0, w_foot_bot, 0),
+                                x_dir=(1, 0, 0), z_dir=(0, -1, 0))
+        for bv, bu in [(+v_bolt, u_bolt), (-v_bolt, u_bolt),
+                        (0, u_front_bolt)]:
+            with BuildSketch(foot_hole_plane) as ins_sk:
+                with Locations(Pos(bv, bu)):
+                    Circle(radius=0.5 * foot_pilot_dia_mm)
+            extrude(ins_sk.sketch, amount=-params.foot_thickness_mm,
+                    mode=Mode.SUBTRACT)
+        # Pusher insert bore (through foot).
+        with BuildSketch(foot_hole_plane) as push_sk:
+            with Locations(Pos(0, u_pusher)):
+                Circle(radius=0.5 * mfg.insert_bore_dia_mm)
+        extrude(push_sk.sketch, amount=-params.foot_thickness_mm,
+                mode=Mode.SUBTRACT)
+
+        # 11. Chamfers on insert holes.
+        chamfer_top_r = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
+        chamfer_bot_r = 0.5 * mfg.insert_bore_dia_mm
+        with Locations(Pos(0, w_top - 0.5 * mfg.insert_chamfer_mm, u_setscrew)):
+            Cone(bottom_radius=chamfer_top_r, top_radius=chamfer_bot_r,
+                 height=mfg.insert_chamfer_mm, rotation=(90, 0, 0),
+                 mode=Mode.SUBTRACT)
+        tilted_fwd = tilted_surface_plane.y_dir * -1
+        tilted_n = tilted_surface_plane.z_dir
+        chamfer_rot = (90 - params.trim_angle_deg, 0, 0)
+        for cv, cu in [(0, u_pusher)]:
+            surf = (tilted_surface_plane.origin
+                    + tilted_surface_plane.x_dir * cv
+                    + tilted_fwd * (cu - u_wall_rear))
+            ctr = surf + tilted_n * (0.5 * mfg.insert_chamfer_mm)
+            with Locations(Pos(ctr.X, ctr.Y, ctr.Z)):
+                Cone(bottom_radius=chamfer_bot_r,
+                     top_radius=chamfer_top_r,
+                     height=mfg.insert_chamfer_mm,
+                     rotation=chamfer_rot, mode=Mode.SUBTRACT)
+
+    result = mount2.part
     result.label = "flexure_mount"
+
+    # Build captive TPU contact bumps as a separate body.
+    _bump_color = Color(0.30, 0.60, 0.85)
+    bump_positions = [
+        (-v_contact_mm, w_bump),
+        (+v_contact_mm, w_bump),
+        (0, bump_center_r),
+    ]
+    bump_parts = []
+    for bv, bw in bump_positions:
+        bump = Cylinder(contact_radius_mm, front_bore_depth_mm,
+                        align=(Align.CENTER, Align.CENTER, Align.MIN))
+        bump = bump.translate((bv, bw, u_shoulder))
+        bump.color = _bump_color
+        bump_parts.append(bump)
+    from build123d import Compound as _Cmp
+    bumps = _Cmp(children=bump_parts)
+    bumps.label = "contact_bumps_tpu"
+    result._contact_bumps = bumps
+
     return result
 
 
@@ -613,10 +640,16 @@ def build_grating_flexure_mount_cad(
     v_half_mm = half_size_mm
 
     # -- pocket dimensions --
-    contact_radius_mm = 1.0
-    w_opening_upper = half_size_mm + mfg.assembly_clearance_mm + mfg.print_tolerance_mm
-    w_opening_lower = -(half_size_mm + contact_radius_mm + 0.2)
-    v_contact_mm = half_size_mm * 0.6
+    w_opening_upper = half_size_mm + 0.5 * (mfg.assembly_clearance_mm + mfg.print_tolerance_mm + params.optic_clearance_mm)
+    w_opening_lower = -w_opening_upper
+
+    # -- contact bumps (TPU, captive in pocket wall) --
+    contact_radius_mm = params.contact_radius_mm
+    contact_offset_mm = params.contact_offset_mm
+    v_contact_mm = 0.5 * params.contact_separation_mm
+    bump_center_w = w_opening_upper + contact_radius_mm - contact_offset_mm
+    w_bump_lower = -bump_center_w
+    w_bump_upper = bump_center_w
 
     # -- foot --
     w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
@@ -660,23 +693,16 @@ def build_grating_flexure_mount_cad(
                 Rectangle(2 * v_half_mm, full_height_mm)
         extrude(stock_sk.sketch, amount=slab_total_u_mm)
 
-        # 2. Pocket cut: rectangle minus two contact cylinders.
+        # 2. Pocket cut: rectangle plus contact bump pockets.
         pocket_w_mm = 2 * half_size_mm
         pocket_h_mm = w_opening_upper - w_opening_lower
         with BuildSketch(pocket_plane) as pocket_sk:
             with Locations(Pos(0, 0.5 * (w_opening_upper + w_opening_lower))):
                 Rectangle(pocket_w_mm, pocket_h_mm)
-            with Locations(Pos(-v_contact_mm, w_opening_lower),
-                           Pos(+v_contact_mm, w_opening_lower)):
-                Circle(contact_radius_mm, mode=Mode.SUBTRACT)
-            contact_verts = [
-                v for v in pocket_sk.vertices()
-                if v.Y < w_opening_lower + contact_radius_mm + 0.1
-                and (abs(v.X - v_contact_mm) < contact_radius_mm + 0.5
-                     or abs(v.X + v_contact_mm) < contact_radius_mm + 0.5)
-            ]
-            if contact_verts:
-                fillet2d(contact_verts, radius=contact_radius_mm)
+            with Locations(Pos(-v_contact_mm, w_bump_lower),
+                           Pos(+v_contact_mm, w_bump_lower),
+                           Pos(0, w_bump_upper)):
+                Circle(contact_radius_mm)
         extrude(pocket_sk.sketch, amount=pocket_depth_mm, mode=Mode.SUBTRACT)
 
         # Setscrew insert bore from top (blind — 0.5mm floor above pocket).
@@ -815,9 +841,26 @@ def build_grating_flexure_mount_cad(
         except Exception:
             pass
     result.label = "flexure_mount"
+
+    _bump_color = Color(0.30, 0.60, 0.85)
+    bump_positions = [
+        (-v_contact_mm, w_bump_lower),
+        (+v_contact_mm, w_bump_lower),
+        (0, w_bump_upper),
+    ]
+    bump_parts = []
+    for bv, bw in bump_positions:
+        bump = Cylinder(contact_radius_mm, pocket_depth_mm,
+                        align=(Align.CENTER, Align.CENTER, Align.MIN))
+        bump = bump.translate((bv, bw, u_pocket_back))
+        bump.color = _bump_color
+        bump_parts.append(bump)
+    from build123d import Compound as _Cmp
+    bumps = _Cmp(children=bump_parts)
+    bumps.label = "contact_bumps_tpu"
+    result._contact_bumps = bumps
+
     return result
-
-
 
 
 
@@ -1243,6 +1286,11 @@ def _load_vendor_detector():
 
     The exit_slit element normal points TOWARD M2, so local +Z maps
     toward the beam. We flip 180° about X so the sensor faces +Z.
+
+    Array orientation: pin 1 (notch) of the TCD1304 is at STEP +X
+    (the end with the signal-processing chain: op-amp, ADC).
+    ``place_in_scene_frame`` maps STEP +X to raysect local +x,
+    which is the short-wavelength (blue) end of the spectrum.
     """
     from build123d import Axis, import_step
     _GLASS_FACE_Z = -6.805     # sensor glass window in vendor STEP
@@ -1297,13 +1345,12 @@ def _load_vendor_f_mirror_at_face(part_number: str, *,
     from build123d import import_step
     path = _VENDOR_STEP_BY_PART.get(part_number)
     if path is None:
-        diameter_mm, thickness_mm, _ = _lookup_f_mirror_in_bom(part_number)
+        focal_mm, diameter_mm, thickness_mm, _ = _lookup_mirror_in_bom(part_number)
         mt, co = _lookup_mirror_shape(part_number)
         if cylindrical_orientation is not None:
             co = cylindrical_orientation
         if mt == "flat":
             return _build_generic_flat_mirror(diameter_mm, thickness_mm)
-        focal_mm = _lookup_mirror_in_bom(part_number)[0]
         return _build_generic_concave_mirror(
             focal_mm, diameter_mm, thickness_mm,
             mirror_type=mt, cylindrical_orientation=co)
@@ -1317,30 +1364,6 @@ def _load_vendor_f_mirror_at_face(part_number: str, *,
         key=lambda f: f.area,
     )
     return mirror.translate((0, 0, -front.center().Z))
-
-
-def _lookup_f_mirror_in_bom(part_number: str) -> tuple[float, float, dict]:
-    """Find a fold mirror part in [mirrors.f1_options] or [mirrors.f2_options].
-
-    Returns ``(diameter_mm, center_thickness_mm, mount_dict)``.
-    """
-    import tomllib
-    bom_path = _get_bom_path()
-    with bom_path.open("rb") as f:
-        bom = tomllib.load(f)
-    for section in ("f1_options", "f2_options"):
-        group = bom["mirrors"].get(section, {})
-        if part_number in group:
-            opt = group[part_number]
-            return (
-                float(opt["diameter_mm"]),
-                float(opt["center_thickness_mm"]),
-                dict(opt["mount"]),
-            )
-    raise KeyError(
-        f"fold mirror part {part_number!r} not found in "
-        f"[mirrors.f1_options] or [mirrors.f2_options]"
-    )
 
 
 def build_f_mirror_assembly(part_number: str, *,
@@ -1362,7 +1385,7 @@ def build_f_mirror_assembly(part_number: str, *,
     cy = 0.5 * (bbox.min.Y + bbox.max.Y)
     mirror = mirror.translate((-cx, -cy, 0))
 
-    diameter_mm, thickness_mm, mount_dict = _lookup_f_mirror_in_bom(part_number)
+    _, diameter_mm, thickness_mm, mount_dict = _lookup_mirror_in_bom(part_number)
     params = _flexure_params_from_bom(mount_dict)
     mount = build_mirror_flexure_mount_cad(
         optic_diameter_mm=diameter_mm,
@@ -1459,7 +1482,8 @@ def _build_generic_spherical_mirror(focal_mm, diameter_mm, center_thickness_mm):
                      align=(Align.CENTER, Align.CENTER, Align.MIN))
     blank = blank.translate((0, 0, -center_thickness_mm))
     cut = Sphere(R).translate((0, 0, R))
-    return blank - cut
+    result = blank - cut
+    return Part.cast(result.solids()[0].wrapped)
 
 
 def _build_generic_cylindrical_mirror(focal_mm, diameter_mm,
@@ -1481,7 +1505,8 @@ def _build_generic_cylindrical_mirror(focal_mm, diameter_mm,
         cut = cut.rotate(Axis.Y, 90).translate((0, 0, R))
     else:
         cut = cut.rotate(Axis.X, 90).translate((0, 0, R))
-    return blank - cut
+    result = blank - cut
+    return Part.cast(result.solids()[0].wrapped)
 
 
 def _build_generic_flat_mirror(diameter_mm, thickness_mm):
@@ -1596,6 +1621,7 @@ def _lookup_mirror_in_bom(part_number: str) -> tuple[float, float, float, dict]:
     """Find a mirror part in any mirror options table.
 
     Returns ``(focal_length_mm, diameter_mm, center_thickness_mm, mount_dict)``.
+    Flat mirrors return ``focal_length_mm = inf``.
     """
     import tomllib
     bom_path = _get_bom_path()
@@ -1609,15 +1635,15 @@ def _lookup_mirror_in_bom(part_number: str) -> tuple[float, float, float, dict]:
     ):
         if part_number in group:
             opt = group[part_number]
+            focal = float(opt["focal_length_mm"]) if "focal_length_mm" in opt else float("inf")
             return (
-                float(opt["focal_length_mm"]),
+                focal,
                 float(opt["diameter_mm"]),
                 float(opt["center_thickness_mm"]),
                 dict(opt["mount"]),
             )
     raise KeyError(
-        f"mirror part {part_number!r} not found in [mirrors.m1_options] "
-        f"or [mirrors.m2_options]"
+        f"mirror part {part_number!r} not found in mirror options"
     )
 
 
@@ -1694,6 +1720,7 @@ def _load_manufacturing() -> ManufacturingParams:
 def _flexure_params_from_bom(mount_dict: dict) -> RoundMirrorFlexureMountParams:
     """Build RoundMirrorFlexureMountParams from BOM mount dict. All fields explicit."""
     return RoundMirrorFlexureMountParams(
+        optic_clearance_mm=float(mount_dict["optic_clearance_mm"]),
         shoulder_width_mm=float(mount_dict["shoulder_width_mm"]),
         channel_width_mm=float(mount_dict["channel_width_mm"]),
         channel_extension_mm=float(mount_dict["channel_extension_mm"]),
@@ -1710,6 +1737,9 @@ def _flexure_params_from_bom(mount_dict: dict) -> RoundMirrorFlexureMountParams:
         flexure_thickness_mm=float(mount_dict["flexure_thickness_mm"]),
         flexure_gap_mm=float(mount_dict["flexure_gap_mm"]),
         trim_angle_deg=float(mount_dict["trim_angle_deg"]),
+        contact_radius_mm=float(mount_dict["contact_radius_mm"]),
+        contact_offset_mm=float(mount_dict["contact_offset_mm"]),
+        contact_separation_mm=float(mount_dict["contact_separation_mm"]),
     )
 
 
@@ -2152,8 +2182,10 @@ def _grating_flexure_params_from_bom(mount_dict: dict) -> GratingFlexureMountPar
     """Build GratingFlexureMountParams from BOM mount dict. All fields explicit."""
     return GratingFlexureMountParams(
         jaw_clearance_mm=float(mount_dict["jaw_clearance_mm"]),
-        contact_point_width_mm=float(mount_dict["contact_point_width_mm"]),
-        contact_point_height_mm=float(mount_dict["contact_point_height_mm"]),
+        optic_clearance_mm=float(mount_dict["optic_clearance_mm"]),
+        contact_radius_mm=float(mount_dict["contact_radius_mm"]),
+        contact_offset_mm=float(mount_dict["contact_offset_mm"]),
+        contact_separation_mm=float(mount_dict["contact_separation_mm"]),
         head_clearance_mm=float(mount_dict["head_clearance_mm"]),
         foot_clearance_mm=float(mount_dict["foot_clearance_mm"]),
         pusher_shelf_mm=float(mount_dict["pusher_shelf_mm"]),
@@ -2227,6 +2259,483 @@ def export_grating_flexure_assembly_step(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     export_step(assembly, str(output_path))
+    return output_path
+
+
+_FIXTURE_COLOR = Color(0.75, 0.15, 0.15)
+
+
+_DEBOSS_DEPTH_MM = 0.5
+
+def build_mirror_assembly_fixture(
+    part_number: str,
+    *,
+    wall_mm: float = 3.0,
+    lip_pocket_mm: float = 2.0,
+    label: str | None = None,
+    mfg: ManufacturingParams | None = None,
+) -> Part:
+    """Assembly fixture for placing a mirror into its flexure mount.
+
+    Envelope box around the mount+mirror assembly with:
+      - Mount pocket (outer hull steps 1-5, inflated by clearance)
+      - Mirror pocket (mirror solid, inflated by clearance)
+      - Lip pocket (optic_diameter - lip_pocket_mm, through fixture)
+      - Setscrew access slot (rounded, open to -z edge for removal clearance)
+
+    Frame: same as mount — x=v, y=w, z=u.
+    """
+    if mfg is None:
+        mfg = _load_manufacturing()
+
+    focal_mm, diameter_mm, thickness_mm, mount_dict = _lookup_mirror_in_bom(part_number)
+    params = _flexure_params_from_bom(mount_dict)
+
+    t = mfg.assembly_clearance_mm + mfg.print_tolerance_mm
+    optic_radius_mm = 0.5 * diameter_mm
+    u_vertex = 0.0
+    u_shoulder = -thickness_mm
+    u_wall_rear = u_shoulder - params.rear_wall_mm
+    bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
+    boss_width_mm = bolt_head_mm + params.bolt_safety_mm
+    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
+                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    u_foot_front = u_vertex + foot_length_mm
+    w_top = optic_radius_mm + params.head_clearance_mm
+    w_bot = -(optic_radius_mm + params.foot_clearance_mm)
+    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    v_half_mm = optic_radius_mm + params.wall_margin_mm
+    slab_total_u_mm = u_foot_front - u_wall_rear
+    slab_depth_mm = u_vertex - u_wall_rear
+    full_height_mm = w_top - w_foot_bot
+    w_center = 0.5 * (w_top + w_foot_bot)
+    u_front_bolt = params.front_bolt_offset_mm
+    u_setscrew = 0.5 * (u_wall_rear + u_vertex)
+
+    # Assembly for bounding box
+    asm = build_mirror_flexure_assembly(part_number, params)
+    ab = asm.bounding_box()
+    z_lo = u_wall_rear
+    z_hi = u_foot_front + wall_mm
+    lip_pocket_r = 0.5 * (diameter_mm - lip_pocket_mm)
+
+    # 1. Envelope + lip pocket
+    with BuildPart() as fixture_bp:
+        with Locations(Pos(0.5 * (ab.min.X + ab.max.X),
+                           0.5 * (ab.min.Y + ab.max.Y),
+                           0.5 * (z_lo + z_hi))):
+            Box(ab.max.X - ab.min.X + 2 * wall_mm,
+                ab.max.Y - ab.min.Y + 2 * wall_mm,
+                z_hi - z_lo)
+        with BuildSketch(Plane(origin=(0, 0, z_lo),
+                               x_dir=(1, 0, 0), z_dir=(0, 0, 1))):
+            Circle(lip_pocket_r)
+        extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+
+    # 2. Mount hull (steps 1-5, inflated by t in v and w only)
+    rear_plane = Plane(origin=(0, 0, u_wall_rear),
+                       x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+    with BuildPart() as hull:
+        with BuildSketch(rear_plane):
+            with Locations(Pos(0, w_center)):
+                Rectangle(2 * v_half_mm + 2 * t, full_height_mm + 2 * t)
+        extrude(amount=slab_total_u_mm)
+        side_excess_mm = v_half_mm - optic_radius_mm
+        if side_excess_mm > 0:
+            for sign in (+1, -1):
+                v_cut = sign * (optic_radius_mm + t + 0.5 * side_excess_mm)
+                with Locations(Pos(v_cut, w_center,
+                                   u_wall_rear + 0.5 * slab_total_u_mm)):
+                    Box(side_excess_mm, full_height_mm + 2 * t,
+                        slab_total_u_mm, mode=Mode.SUBTRACT)
+        front_face = hull.faces().sort_by(Axis.Z)[-1]
+        mill_depth_mm = u_foot_front - u_vertex
+        w_slab_center = 0.5 * (w_top + w_bot)
+        with BuildSketch(front_face):
+            with Locations(Pos(0, w_slab_center - w_center)):
+                Rectangle(2 * v_half_mm + 2 * t, w_top - w_bot + 2 * t)
+        extrude(amount=-mill_depth_mm, mode=Mode.SUBTRACT)
+        foot_face = hull.faces().filter_by(Axis.Y).sort_by(Axis.Y)[0]
+        foot_u_mid = foot_face.center().Z
+        with BuildSketch(foot_face):
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_vertex) - foot_u_mid)):
+                Rectangle(2 * v_half_mm + 2 * t, slab_depth_mm)
+            tongue_u_len = u_front_bolt - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt) - foot_u_mid)):
+                Rectangle(boss_width_mm + 2 * t, tongue_u_len)
+            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
+                Circle(0.5 * boss_width_mm + t)
+            tongue_verts = [
+                v for v in hull.vertices()
+                if abs(v.Y - (u_vertex - foot_u_mid)) < 0.2
+                and abs(abs(v.X) - (0.5 * boss_width_mm + t)) < 0.2
+            ]
+            if tongue_verts:
+                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+        extrude(amount=-(w_top - w_foot_bot + 2 * t), mode=Mode.INTERSECT)
+
+    _shelf_plane = Plane(origin=(0, w_bot - t, 0),
+                         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+    with BuildPart() as _shelf_bp:
+        with BuildSketch(_shelf_plane):
+            Circle(0.5 * boss_width_mm + t)
+        extrude(amount=params.pusher_shelf_mm + 2 * t)
+    mount_hull = hull.part.fuse(_shelf_bp.part)
+
+    # 3. Mirror (inflated by t in v and w only)
+    mt, co = _lookup_mirror_shape(part_number)
+    mirror = _build_generic_concave_mirror(
+        focal_mm, diameter_mm + 2 * t, thickness_mm,
+        mirror_type=mt, cylindrical_orientation=co)
+
+    # 4. Subtract mount hull + mirror
+    fixture = fixture_bp.part - mount_hull - mirror
+
+    # 5. Foot/shelf relief + setscrew access slot
+    _fr = mfg.fillet_radius_mm
+    with BuildPart() as fix_final:
+        fix_final._obj = fixture
+        # Through-cut from the optic plane down so the foot can't bottom out.
+        # Widened and deepened by fillet_radius to clear the tongue-slab fillet.
+        with Locations(Pos(0,
+                           0.5 * (w_foot_bot + w_bot),
+                           0.5 * (u_vertex - _fr + z_hi))):
+            Box(boss_width_mm + 2 * t + 2 * _fr,
+                w_bot - w_foot_bot + 2 * t,
+                z_hi - u_vertex + _fr + 2 * t,
+                mode=Mode.SUBTRACT)
+        # Through-cut for the pusher shelf pocket.
+        with Locations(Pos(0,
+                           w_bot + 0.5 * params.pusher_shelf_mm,
+                           0.5 * (u_vertex - _fr + z_hi))):
+            Box(boss_width_mm + 2 * t + 2 * _fr,
+                params.pusher_shelf_mm + 4 * t,
+                z_hi - u_vertex + _fr + 2 * t,
+                mode=Mode.SUBTRACT)
+        ss_plane = Plane(origin=(0, 0, 0),
+                         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+        with BuildSketch(ss_plane):
+            _r = 0.5 * mfg.insert_bore_dia_mm
+            with Locations(Pos(0, -u_setscrew)):
+                Circle(_r)
+            _slot_h = u_setscrew - z_lo + _r
+            with Locations(Pos(0, 0.5 * (-u_setscrew - z_lo + _r))):
+                Rectangle(mfg.insert_bore_dia_mm, _slot_h)
+        extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+        # Debossed label on top face (+w)
+        if label:
+            top_y = ab.max.Y + wall_mm
+            text_plane = Plane(
+                origin=Vector(0, top_y, 0.5 * (z_lo + z_hi)),
+                x_dir=Vector(1, 0, 0),
+                z_dir=Vector(0, 1, 0))
+            with BuildSketch(text_plane):
+                Text(label, font_size=8,
+                     font="DejaVu Sans", font_style=FontStyle.BOLD)
+            extrude(amount=-_DEBOSS_DEPTH_MM, mode=Mode.SUBTRACT)
+
+    result = fix_final.part.solids()[0]
+    result.color = _FIXTURE_COLOR
+    result.label = f"fixture_{part_number}"
+    return result
+
+
+def export_mirror_assembly_fixture_step(
+    part_number: str,
+    output_path: Path | None = None,
+    **kwargs,
+) -> Path:
+    """Export a mirror assembly fixture as STEP."""
+    fixture = build_mirror_assembly_fixture(part_number, **kwargs)
+    if output_path is None:
+        output_path = Path(f"output/fixture_{part_number}.step")
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    export_step(fixture, str(output_path))
+    return output_path
+
+
+def build_grating_assembly_fixture(
+    part_number: str = "GR25-0605",
+    *,
+    wall_mm: float = 3.0,
+    lip_pocket_mm: float = 2.0,
+    label: str | None = "GR",
+    mfg: ManufacturingParams | None = None,
+) -> Part:
+    """Assembly fixture for placing a grating into its flexure mount.
+
+    Same pattern as mirror fixture: envelope, lip pocket, mount hull
+    (steps 1-5 inflated by clearance), grating subtracted, setscrew
+    access slot (rounded, open to -z edge).
+    """
+    if mfg is None:
+        mfg = _load_manufacturing()
+
+    size_mm, thickness_mm, mount_dict = _lookup_grating_in_bom(part_number)
+    params = _grating_flexure_params_from_bom(mount_dict)
+
+    t = mfg.assembly_clearance_mm + mfg.print_tolerance_mm
+    half_size_mm = 0.5 * size_mm
+    u_vertex = 0.0
+    u_wall_rear = -(thickness_mm + params.rear_wall_mm)
+    slab_depth_mm = u_vertex - u_wall_rear
+    w_top = half_size_mm + params.head_clearance_mm
+    w_bot = -(half_size_mm + params.foot_clearance_mm)
+    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    v_half_mm = half_size_mm
+    bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
+    boss_width_mm = bolt_head_mm + params.bolt_safety_mm
+    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
+                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    u_foot_front = u_vertex + foot_length_mm
+    slab_total_u_mm = u_foot_front - u_wall_rear
+    full_height_mm = w_top - w_foot_bot
+    w_center = 0.5 * (w_top + w_foot_bot)
+    u_front_bolt = params.front_bolt_offset_mm
+    u_setscrew = -0.5 * thickness_mm
+
+    # Assembly for bounding box
+    asm = build_grating_flexure_assembly(part_number, params)
+    ab = asm.bounding_box()
+    z_lo = u_wall_rear
+    z_hi = u_foot_front + wall_mm
+
+    # Lip pocket: full grating width in v, 0.5mm lip on top/bottom (w)
+    lip_v = size_mm
+    lip_w = size_mm - lip_pocket_mm
+
+    # 1. Envelope + lip pocket
+    with BuildPart() as fixture_bp:
+        with Locations(Pos(0.5 * (ab.min.X + ab.max.X),
+                           0.5 * (ab.min.Y + ab.max.Y),
+                           0.5 * (z_lo + z_hi))):
+            Box(ab.max.X - ab.min.X + 2 * wall_mm,
+                ab.max.Y - ab.min.Y + 2 * wall_mm,
+                z_hi - z_lo)
+        with BuildSketch(Plane(origin=(0, 0, z_lo),
+                               x_dir=(1, 0, 0), z_dir=(0, 0, 1))):
+            Rectangle(lip_v, lip_w)
+        extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+
+    # 2. Mount hull (steps 1-5, inflated by t in v and w only)
+    rear_plane = Plane(origin=(0, 0, u_wall_rear),
+                       x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+    with BuildPart() as hull:
+        with BuildSketch(rear_plane):
+            with Locations(Pos(0, w_center)):
+                Rectangle(2 * v_half_mm + 2 * t, full_height_mm + 2 * t)
+        extrude(amount=slab_total_u_mm)
+
+        front_face = hull.faces().sort_by(Axis.Z)[-1]
+        mill_depth_mm = u_foot_front - u_vertex
+        w_slab_center = 0.5 * (w_top + w_bot)
+        with BuildSketch(front_face):
+            with Locations(Pos(0, w_slab_center - w_center)):
+                Rectangle(2 * v_half_mm + 2 * t, w_top - w_bot + 2 * t)
+        extrude(amount=-mill_depth_mm, mode=Mode.SUBTRACT)
+
+        foot_face = hull.faces().filter_by(Axis.Y).sort_by(Axis.Y)[0]
+        foot_u_mid = foot_face.center().Z
+        with BuildSketch(foot_face):
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_vertex) - foot_u_mid)):
+                Rectangle(2 * v_half_mm + 2 * t, slab_depth_mm)
+            tongue_u_len = u_front_bolt - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt) - foot_u_mid)):
+                Rectangle(boss_width_mm + 2 * t, tongue_u_len)
+            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
+                Circle(0.5 * boss_width_mm + t)
+            tongue_verts = [
+                v for v in hull.vertices()
+                if abs(v.Y - (u_vertex - foot_u_mid)) < 0.2
+                and abs(abs(v.X) - (0.5 * boss_width_mm + t)) < 0.2
+            ]
+            if tongue_verts:
+                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+        extrude(amount=-(w_top - w_foot_bot + 2 * t), mode=Mode.INTERSECT)
+
+    _shelf_plane = Plane(origin=(0, w_bot - t, 0),
+                         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+    with BuildPart() as _shelf_bp:
+        with BuildSketch(_shelf_plane):
+            Circle(0.5 * boss_width_mm + t)
+        extrude(amount=params.pusher_shelf_mm + 2 * t)
+    mount_hull = hull.part.fuse(_shelf_bp.part)
+
+    # 3. Grating solid (inflated by t in v and w only)
+    grating = _build_generic_grating(size_mm + 2 * t, thickness_mm)
+
+    # 4. Subtract mount hull + grating
+    fixture = fixture_bp.part - mount_hull - grating
+
+    # 5. Foot/shelf relief + setscrew access slot
+    _fr = mfg.fillet_radius_mm
+    with BuildPart() as fix_final:
+        fix_final._obj = fixture
+        with Locations(Pos(0,
+                           0.5 * (w_foot_bot + w_bot),
+                           0.5 * (u_vertex - _fr + z_hi))):
+            Box(boss_width_mm + 2 * t + 2 * _fr,
+                w_bot - w_foot_bot + 2 * t,
+                z_hi - u_vertex + _fr + 2 * t,
+                mode=Mode.SUBTRACT)
+        with Locations(Pos(0,
+                           w_bot + 0.5 * params.pusher_shelf_mm,
+                           0.5 * (u_vertex - _fr + z_hi))):
+            Box(boss_width_mm + 2 * t + 2 * _fr,
+                params.pusher_shelf_mm + 4 * t,
+                z_hi - u_vertex + _fr + 2 * t,
+                mode=Mode.SUBTRACT)
+        ss_plane = Plane(origin=(0, 0, 0),
+                         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+        with BuildSketch(ss_plane):
+            _r = 0.5 * mfg.insert_bore_dia_mm
+            with Locations(Pos(0, -u_setscrew)):
+                Circle(_r)
+            _slot_h = u_setscrew - z_lo + _r
+            with Locations(Pos(0, 0.5 * (-u_setscrew - z_lo + _r))):
+                Rectangle(mfg.insert_bore_dia_mm, _slot_h)
+        extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+        if label:
+            top_y = ab.max.Y + wall_mm
+            text_plane = Plane(
+                origin=Vector(0, top_y, 0.5 * (z_lo + z_hi)),
+                x_dir=Vector(1, 0, 0),
+                z_dir=Vector(0, 1, 0))
+            with BuildSketch(text_plane):
+                Text(label, font_size=8,
+                     font="DejaVu Sans", font_style=FontStyle.BOLD)
+            extrude(amount=-_DEBOSS_DEPTH_MM, mode=Mode.SUBTRACT)
+
+    result = fix_final.part.solids()[0]
+    result.color = _FIXTURE_COLOR
+    result.label = f"fixture_{part_number}"
+    return result
+
+
+def export_grating_assembly_fixture_step(
+    part_number: str = "GR25-0605",
+    output_path: Path | None = None,
+    **kwargs,
+) -> Path:
+    """Export a grating assembly fixture as STEP."""
+    fixture = build_grating_assembly_fixture(part_number, **kwargs)
+    if output_path is None:
+        output_path = Path(f"output/fixture_{part_number}.step")
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    export_step(fixture, str(output_path))
+    return output_path
+
+
+def build_hasma_tap_fixture(
+    *,
+    mfg: ManufacturingParams | None = None,
+) -> Part:
+    """Tap guide fixture for the HASMA 1/4"-36 thread bore.
+
+    A conical plug that seats in the housing's conical flare cut,
+    with a 1/4" through bore to guide a 1/4"-36 tap straight.
+
+    Frame: z-axis along bore (= slit optical axis in the housing).
+    z=0 at the narrow end (hex clearance plane), cone flares toward +z.
+    """
+    import tomllib
+
+    if mfg is None:
+        mfg = _load_manufacturing()
+
+    bom_path = _get_bom_path()
+    with bom_path.open("rb") as f:
+        bom = tomllib.load(f)
+
+    slit_mount = bom["slits"]["mount"]
+    hex_half_mm = float(slit_mount["hex_half_mm"])
+    boundary_mm = float(slit_mount["boundary_mm"])
+    tap_drill_dia_mm = float(slit_mount["tap_drill_dia_mm"])
+
+    from optics.housing import _HASMA_FLARE_HALF_ANGLE_DEG
+    flare_half_angle_deg = _HASMA_FLARE_HALF_ANGLE_DEG
+
+    from optics.housing_cad import _CAVITY_POCKET_CLEARANCE_MM
+    cavity_clearance_mm = _CAVITY_POCKET_CLEARANCE_MM
+
+    t = mfg.print_tolerance_mm
+
+    # Cone geometry: matches the housing conical flare with clearance.
+    # Near radius = hex_clearance_r (at z=0), flares at 45° toward +z.
+    hex_clearance_r = hex_half_mm + cavity_clearance_mm
+    near_r = hex_clearance_r - t
+    cone_length = boundary_mm + 5.0
+    far_r = near_r + cone_length * math.tan(math.radians(flare_half_angle_deg))
+
+    # Tap clearance bore: 1/4" = 6.35mm + print/assembly tolerance
+    tap_bore_r = 0.5 * 6.35 + mfg.print_tolerance_mm + mfg.assembly_clearance_mm
+    cone_length = max(cone_length, 25.4)
+
+    with BuildPart() as fix:
+        with BuildSketch(Plane.XY):
+            Circle(near_r)
+        extrude(amount=cone_length, taper=-flare_half_angle_deg)
+
+        # Through bore for tap
+        bore_plane = Plane(origin=(0, 0, 0),
+                           x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+        with BuildSketch(bore_plane):
+            Circle(tap_bore_r)
+        extrude(until=Until.LAST, mode=Mode.SUBTRACT)
+
+        # Debossed label wrapped around cone surface
+        _label = '1/4"-36 TAP'
+        _fs = 8
+        _alpha = math.radians(flare_half_angle_deg)
+        _z_text = cone_length * 0.55
+        _r_text = near_r + _z_text * math.tan(_alpha)
+        _char_widths = []
+        for _ch in _label:
+            if _ch == ' ':
+                _char_widths.append(_fs * 0.3)
+            else:
+                with BuildSketch(Plane.XY) as _ms:
+                    Text(_ch, font_size=_fs,
+                         font="DejaVu Sans", font_style=FontStyle.BOLD)
+                _char_widths.append(_ms.sketch.bounding_box().size.X)
+        _total_w = sum(_char_widths)
+        _x = -_total_w / 2
+        for _ch, _cw in zip(_label, _char_widths):
+            _cx = _x + _cw / 2
+            _x += _cw
+            if _ch == ' ':
+                continue
+            _theta = math.pi - _cx / _r_text
+            _ct, _st = math.cos(_theta), math.sin(_theta)
+            _origin = Vector(_r_text * _ct, _r_text * _st, _z_text)
+            _n = Vector(math.cos(_alpha) * _ct,
+                        math.cos(_alpha) * _st,
+                        -math.sin(_alpha))
+            _xd = Vector(_st, -_ct, 0)
+            with BuildSketch(Plane(origin=_origin, x_dir=_xd, z_dir=_n)):
+                Text(_ch, font_size=_fs,
+                     font="DejaVu Sans", font_style=FontStyle.BOLD)
+            extrude(amount=-_DEBOSS_DEPTH_MM, mode=Mode.SUBTRACT)
+
+    result = fix.part
+    result.color = _FIXTURE_COLOR
+    result.label = "hasma_tap_fixture"
+    return result
+
+
+def export_hasma_tap_fixture_step(
+    output_path: Path | None = None,
+    **kwargs,
+) -> Path:
+    """Export the HASMA tap guide fixture as STEP."""
+    fixture = build_hasma_tap_fixture(**kwargs)
+    if output_path is None:
+        output_path = Path("output/hasma_tap_fixture.step")
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    export_step(fixture, str(output_path))
     return output_path
 
 
@@ -2361,7 +2870,7 @@ def place_all_in_scene_frame(
                     _fm_mirror = _fm_mirror.translate(
                         (-0.5*(_fm_bb.min.X+_fm_bb.max.X),
                          -0.5*(_fm_bb.min.Y+_fm_bb.max.Y), 0))
-                    _fm_dia, _fm_ct, _fm_md = _lookup_f_mirror_in_bom(fm_part)
+                    _, _fm_dia, _fm_ct, _fm_md = _lookup_mirror_in_bom(fm_part)
                     _fm_params = _flexure_params_from_bom(_fm_md)
                     _fm_mount = build_mirror_flexure_mount_cad(
                         optic_diameter_mm=_fm_dia,
@@ -2390,6 +2899,15 @@ def place_all_in_scene_frame(
                     piece.children[0], position, normal)
         else:
             continue
+
+        # Inject contact bumps into the assembly if present on the mount.
+        if hasattr(piece, 'children') and piece.children:
+            mount_child = piece.children[0]
+            if hasattr(mount_child, '_contact_bumps'):
+                from build123d import Compound as _Cmp
+                piece = _Cmp(children=list(piece.children)
+                             + [mount_child._contact_bumps])
+                piece.label = f"assembly_{el.label}"
 
         placed_piece = place_in_scene_frame(piece, position, normal)
         placed.append(placed_piece)

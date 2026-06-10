@@ -5,8 +5,8 @@
 ## 4.1 Optical train
 
 The v0 optical train is an aberration-corrected Czerny-Turner with a
-cylindrical collimator (M1), sagittal cylindrical fold mirror (F1), and
-spherical focuser (M2):
+tangential cylindrical collimator (M1), sagittal cylindrical collimator
+(F1), and spherical focuser (M2):
 
 | Element | Specification | Part | Cost |
 |---------|---------------|------|------|
@@ -60,46 +60,114 @@ wider layout with higher residual aberrations at the band edges.
 |  | Point source | | 25 µm fiber | |
 |---|---|---|---|---|
 | λ (nm) | RMS (µm) | ILF (nm) | RMS (µm) | ILF (nm) |
-| 400 | 41.0 | 0.65 | 46.6 | 0.78 |
-| 550 | 19.9 | 0.25 | 31.3 | 0.25 |
-| 700 | 58.4 | 0.12 | 63.1 | 0.48 |
-| Mean | 39.8 | 0.34 | 47.0 | 0.50 |
+| 400 | 41.1 | 0.68 | 46.8 | 0.74 |
+| 550 | 20.1 | 0.36 | 30.9 | 0.51 |
+| 700 | 58.5 | 0.73 | 63.3 | 0.85 |
+| Mean | 39.9 | 0.59 | 47.0 | 0.70 |
 
 Figure 4 shows the v0 spot diagrams: point source (top) and 25 µm
 fiber source (bottom).
 
 ## 4.3 Assembly tolerance budget
 
-A one-at-a-time tolerance sweep perturbs each physical dimension ±5%
-around nominal and measures both mean RMS spot size and mean ILF FWHM
-(400, 550, 700 nm; point source; 5,000 rays per wavelength). Axis
-rotation slopes are computed from one-sided perturbation (the
-sensitivity is symmetric).
+A true one-at-a-time (OAT) sweep perturbs each physical dimension
+independently — angular tilts ±2°, layout distances ±5% — without
+recomputing downstream positions, and records the ILF (encircled-energy
+width containing 76% of hits, equivalent to Gaussian FWHM) at each
+point. For each axis the table reports the maximum perturbation that
+keeps the ILF below 1 nm:
 
-| Rank | Parameter | Nominal | RMS slope | ILF slope |
-|------|-----------|---------|-----------|-----------|
-| 1 | F1 axis rotation | 90° | 44.5 µm/deg | 1.476 nm/deg |
-| 2 | M1 axis rotation | 0° | 32.0 µm/deg | 1.154 nm/deg |
-| 3 | θ\_F1 | 24.4° | 2.8 µm/deg | 0.001 nm/deg |
-| 4 | L\_A | 86.6 mm | 2.0 µm/mm | 0.100 nm/mm |
-| 5 | L\_F1 | 59.5 mm | 1.7 µm/mm | 0.018 nm/mm |
-| 6 | L\_B | 109.3 mm | 1.1 µm/mm | 0.210 nm/mm |
-| 7 | θ\_D | 9.2° | 0.5 µm/deg | 0.129 nm/deg |
-| 8 | L\_M1 | 86.9 mm | 0.1 µm/mm | 0.012 nm/mm |
-| 9 | L\_M2 | 83.8 mm | ~0 | 0.050 nm/mm |
+```
+python scripts/tolerance.py --rays 100000 --n_points 11 --ilf_target 1.0
+```
 
-Cylinder axis rotation (ranks 1–2) is the only assembly-critical
-parameter: F1 degrades ILF by 1.5 nm per degree of axis error,
-consuming the full resolution budget at ~0.3°. Round Thorlabs blanks
-require an alignment procedure to achieve this. All other parameters
-(ranks 3–9) are comfortably within FDM print accuracy and do not
-require special attention during assembly.
+| Rank | Symbol | Description | Nominal | Budget | Category |
+|------|--------|-------------|---------|--------|----------|
+| 1 | L\_F1 | M1 to F1 distance | 59.5 mm | ±0.12 mm | tight |
+| 2 | L\_A | Slit to M1 distance | 86.6 mm | ±0.21 mm | tight |
+| 3 | L\_M1 | Grating to M1 distance | 86.9 mm | ±0.22 mm | tight |
+| 4 | L\_B | M2 to detector distance | 109.3 mm | ±0.24 mm | tight |
+| 5 | L\_M2 | Grating to M2 distance | 83.8 mm | ±0.27 mm | tight |
+| 6 | θ\_M2 | M2 incidence angle | 15.4° | ±0.28° | tight |
+| 7 | θ\_M1 | M1 incidence angle | 12.5° | ±0.41° | moderate |
+| 8 | φ\_F1 | F1 cylinder axis orientation | 90° | ±0.48° | moderate |
+| 9 | φ\_M1 | M1 cylinder axis orientation | 0° | ±0.57° | moderate |
+| 10 | α | Grating incidence angle | 3.5° | ±1.94° | relaxed |
+| 11 | θ\_F1 | F1 fold incidence angle | 24.4° | > ±2° | relaxed |
+| 12 | θ\_D | Detector tilt | 9.2° | > ±1° | relaxed |
 
-## 4.4 Summary
+Layout distances (ranks 1–5) have the tightest budgets: L\_F1 must
+be held to ±0.12 mm, and all arm lengths to ~±0.25 mm. The M2
+incidence angle θ\_M2 is comparably tight at ±0.28°. The cylinder
+axis orientations φ\_M1 and φ\_F1 (ranks 8–9) tolerate ~±0.5°
+deviation. The grating incidence angle α, fold angle θ\_F1, and
+detector tilt θ\_D are relaxed and do not require special attention
+during assembly.
+
+## 4.4 Printable parts
+
+All printable parts are generated procedurally from BOM parameters
+and exported with:
+
+```
+python export.py --baseline data/czerny_baseline_v0_design.toml --cad
+```
+
+### 4.4.1 Housing and mounts
+
+| Part | File | Material | Notes |
+|------|------|----------|-------|
+| Housing | `housing.step` | PLA/PETG | Unibody chassis + light-tight enclosure |
+| Top cover | `top_cover.step` | PLA/PETG | Snap-fit lid with embossed ray path |
+| Detector cover | `detector_cover.step` | PLA/PETG | Shields detector pocket |
+| Bottom cover | `bottom_cover.step` | PLA/PETG | Base plate with screw holes |
+| F1 mount | `f1_mount.step` | PLA/PETG | Sagittal cylindrical collimator mount |
+| M1 mount | `m1_mount.step` | PLA/PETG | Tangential cylindrical collimator mount |
+| M2 mount | `m2_mount.step` | PLA/PETG | Spherical focuser mount |
+| Grating mount | `grating_mount.step` | PLA/PETG | Ruled grating mount |
+| Contact bumps | (included in mounts) | TPU | Captive cylinders, three per mount |
+
+Each optic mount includes captive TPU contact bumps — three cylinders
+seated in pockets in the bore wall.  The top setscrew preloads the
+optic against the two bottom bumps for three-point retention.  The
+HASMA bore prints as a 5.5 mm tap drill hole; the 1/4"-36 thread is
+tapped post-print.
+
+### 4.4.2 Assembly fixtures
+
+| Fixture | File | Purpose |
+|---------|------|---------|
+| M1 fixture | `m1_fixture.step` | Holds mirror during assembly |
+| M2 fixture | `m2_fixture.step` | Holds mirror during assembly |
+| F1 fixture | `f1_fixture.step` | Holds mirror during assembly |
+| Grating fixture | `grating_fixture.step` | Holds grating during assembly |
+| HASMA tap guide | `hasma_tap_fixture.step` | Guides 1/4"-36 tap through bore |
+
+Each optic mount fixture is an envelope around the mount's outer
+contour and the optic solid, with a 1 mm contact lip that supports
+the optic face during assembly.  Through-cuts beneath the foot tongue
+and pusher shelf (from the optic plane to the fixture floor) prevent
+the mount from bottoming out before the body is fully seated.  A
+setscrew access hole lets the operator tighten the retention setscrew
+while the mount and optic are held in the fixture.
+
+The HASMA tap guide is a 1" cone matching the housing's 45° conical
+flare, with a 1/4" (6.35 mm) through bore that keeps the tap aligned
+to the bore axis.
+
+## 4.5 Results
+
+A CFL spectrum captured with the assembled v0.3.0 instrument confirms
+sub-1 nm resolution: a Gaussian fit to the isolated 405 nm Hg line
+gives FWHM = 0.86 nm.
+
+![CFL spectrum — v0.3.0](figures/fig_6_cfl_spectrum.png)
+
+## 4.6 Summary
 
 | Metric | Target | Achieved | Notes |
 |--------|--------|----------|-------|
-| Resolution (ILF) | <1 nm FWHM | 0.25-0.78 nm | 25 µm fiber source |
+| Resolution (ILF) | <1 nm EE76 | 0.86 nm FWHM (405 nm) | Measured from CFL spectrum |
 | Spectral range | 400-700 nm | 350-750 nm | Grating eff. & mirror refl. |
 | Spectral coverage | ≥300 nm | 420 nm | TCD1304 at 14.5 nm/mm |
 | Throughput | >0.5% | 22-41% | All losses, λ-dependent |
@@ -107,11 +175,11 @@ require special attention during assembly.
 | RLD | ≤17 nm/mm | 14.5 nm/mm | 600 g/mm, f = 100 mm |
 | BOM cost | <$500 | ~$892 | **Exceeds target by 80%** |
 
-The v0 design meets the resolution target (ILF < 1 nm) and the spectral
-coverage target (≥300 nm) but misses the BOM cost target. The primary
-bottleneck is the F1 focal length: Thorlabs' shortest cylindrical mirror
-is f = 25 mm, which limits the astigmatism correction and forces the
-optimizer into a wider layout (87×118 mm) with higher residual
-aberrations at the band edges. Every part can be ordered from
-thorlabs.com with next-day shipping, making v0 the fastest path to a
-physical prototype.
+The v0 design meets the resolution target (0.86 nm FWHM measured at
+405 nm) and the spectral coverage target (≥300 nm) but misses the BOM
+cost target. The primary bottleneck is the F1 focal length: Thorlabs'
+shortest cylindrical mirror is f = 25 mm, which limits the astigmatism
+correction and forces the optimizer into a wider layout (87×118 mm)
+with higher residual aberrations at the band edges. Every part can be
+ordered from thorlabs.com with next-day shipping, making v0 the
+fastest path to a physical prototype.

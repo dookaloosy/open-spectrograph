@@ -21,8 +21,6 @@ from build123d import (
     CounterBoreHole,
     FontStyle,
     GeomType,
-    Helix,
-    Line,
     Location,
     Locations,
     Mode,
@@ -38,7 +36,6 @@ from build123d import (
     extrude,
     fillet,
     offset,
-    sweep,
 )
 from build123d.topology.three_d import Solid
 
@@ -404,8 +401,8 @@ def build_solid_housing_cad(
         bore_outside = bore_pos - bore_inward * 50
         bore_plane = Plane(origin=bore_outside, z_dir=bore_inward)
 
-        # Step 1: Drill pilot bore (diameter from BOM).
-        _pilot_r = 0.5 * spec.hasma_pilot_bore_dia_mm
+        # Step 1: Drill tap drill bore (diameter from BOM).
+        _pilot_r = 0.5 * spec.hasma_tap_drill_dia_mm
         with BuildSketch(bore_plane) as bore_sk:
             Circle(radius=_pilot_r)
         bore_tool = _cut_through_next(
@@ -413,13 +410,7 @@ def build_solid_housing_cad(
         if bore_tool is not None:
             add(bore_tool, mode=Mode.SUBTRACT)
 
-        _hasma_thread_params = None
-        if spec.hasma_thread_tpi is not None:
-            _hasma_thread_params = (
-                spec.hasma_thread_tpi,
-                spec.hasma_thread_major_dia_mm,
-                bore_pos, bore_inward,
-            )
+
 
         # ── Detector features ────────────────────────────────────────
         # Reference planes: det_plane at the wall boundary (det_bnd_pos)
@@ -680,65 +671,6 @@ def build_solid_housing_cad(
                 bore_pos, bore_inward,
                 flare_z_floor, flare_z_height, height)
             add(_clipped_cone, mode=Mode.SUBTRACT)
-
-        # Step 2: Chamfer the pilot bore entry edge (after flare).
-        if spec.hasma_thread_tpi is not None:
-            from build123d import chamfer as _chamfer_op
-            _bore_edges = [
-                e for e in bp.part.edges().filter_by(GeomType.CIRCLE)
-                if abs(e.radius - _pilot_r) < 0.01
-            ]
-            if _bore_edges:
-                _outer_edge = min(
-                    _bore_edges,
-                    key=lambda e: (e.center() - bore_outside).length)
-                try:
-                    _chamfer_op(_outer_edge, length=0.5)
-                except Exception:
-                    pass
-
-        # Step 3: Subtract external thread solid (cylinder + teeth).
-        # Oversized length so threads extend past both wall faces.
-        if _hasma_thread_params is not None:
-            _tpi, _nom_major, _bp, _bi = _hasma_thread_params
-            _pitch = 25.4 / _tpi
-            _H = _pitch * math.sqrt(3) / 2
-            _pitch_r = (_nom_major - 0.6495 * _pitch) / 2
-            _minor_r = _pitch_r - 0.25 * _H
-            _tlen = 8.0
-            _margin = 2.0
-            _outward = Vector(-_bi.X, -_bi.Y, 0)
-            _thread_origin = Vector(
-                _bp.X + _bi.X * _margin,
-                _bp.Y + _bi.Y * _margin, 0)
-            _ts = (_thread_origin.X, _thread_origin.Y, 0)
-
-            _helix = Helix(pitch=_pitch, height=_tlen,
-                           radius=_pitch_r,
-                           center=_ts,
-                           direction=(_outward.X, _outward.Y, 0))
-            _h_start = _helix.position_at(0)
-            _h_tan = _helix.tangent_at(0)
-            _h_radial = (_h_start - Vector(*_ts))
-            _h_radial = Vector(_h_radial.X, _h_radial.Y, 0).normalized()
-            _prof_plane = Plane(origin=_h_start,
-                                x_dir=_h_radial, z_dir=_h_tan)
-            _binormal = Line(Vector(*_ts),
-                             Vector(*_ts) + _outward * _tlen)
-
-            with BuildPart() as _ext_thread_bp:
-                with BuildSketch(Plane(
-                    origin=Vector(*_ts), z_dir=_outward)):
-                    Circle(radius=_minor_r)
-                extrude(amount=_tlen)
-                with BuildSketch(_prof_plane):
-                    Polygon((-_H / 2, -_pitch / 2),
-                            (_H / 2, 0),
-                            (-_H / 2, _pitch / 2), align=None)
-                sweep(path=_helix, binormal=_binormal)
-            _ext_thread = _ext_thread_bp.part
-
-            add(_ext_thread, mode=Mode.SUBTRACT)
 
         # ── Bottom cover pocket ──────────────────────────────────────
         # Ledge pocket (plate sits here).

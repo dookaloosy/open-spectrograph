@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "open-spectrograph"
-version = "0.2.0"
+version = "0.3.0"
 description = "Non-sequential ray-traced fiber spectrograph simulation and evolutionary optimization"
 requires-python = ">=3.11"
 license = { text = "MIT" }

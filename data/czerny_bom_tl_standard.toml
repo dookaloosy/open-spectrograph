@@ -53,6 +53,7 @@ off_axis_angle_deg      = 0.0
 
 [mirrors.m1_options.CM254-100-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 12.7
 channel_extension_mm    = 1.0
@@ -84,6 +85,7 @@ off_axis_angle_deg      = 0.0
 
 [mirrors.m2_options.CM508-100-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 25.4
 channel_extension_mm    = 1.0
@@ -99,6 +101,10 @@ front_bolt_offset_mm    = 8.0
 flexure_thickness_mm    = 0.80
 flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 25.4
+
 
 [mirrors.m2_options.CM254-100-G01]
 focal_length_mm         = 100.0
@@ -113,6 +119,7 @@ off_axis_angle_deg      = 0.0
 
 [mirrors.m2_options.CM254-100-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 12.7
 channel_extension_mm    = 1.0
@@ -128,6 +135,10 @@ front_bolt_offset_mm    = 8.0
 flexure_thickness_mm    = 0.80
 flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 12.7
+
 
 [grating_options.GR25-0605]
 # 25 × 25 mm, 600 g/mm, blaze 500 nm.
@@ -146,8 +157,10 @@ efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
 [grating_options.GR25-0605.mount]
 type                    = "grating_flexure"
 jaw_clearance_mm        = 3.0
-contact_point_width_mm  = 2.0
-contact_point_height_mm = 1.0
+optic_clearance_mm       = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
 head_clearance_mm       = 5.0
 foot_clearance_mm       = 4.00
 rear_wall_mm            = 3.0
@@ -172,6 +185,7 @@ cost_usd                = 42.60
 
 [mirrors.f1_options.PF05-03-G01.mount]
 type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
 shoulder_width_mm       = 1.0
 channel_width_mm        = 6.35
 channel_extension_mm    = 1.0
@@ -187,6 +201,10 @@ front_bolt_offset_mm    = 5.0
 flexure_thickness_mm    = 0.80
 flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 6.3
+
 
 # ── Slit (25 µm SMA fiber, NA 0.12) ────────────────────────────────────────
 
