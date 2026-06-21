@@ -492,6 +492,31 @@ def _do_cad(args, design, genome, parts, scene, has_housing, placed, out_dir,
     except Exception as e:
         print(f"[fixture] hasma tap skipped: {e}")
 
+    # Laser alignment screen (standalone STEP)
+    try:
+        from optics.mounts_cad import build_laser_alignment_screen
+        import tomllib as _tomllib
+        _bom_p = Path(bom_path) if bom_path else Path("data/czerny_bom_v0_design.toml")
+        with _bom_p.open("rb") as _f:
+            _bom = _tomllib.load(_f)
+        _mfg = _bom["manufacturing"]
+        _bolt_head = float(_mfg["bolts"]["M2"]["head_dia_mm"])
+        _mount0 = _bom["mirrors"]["m1_options"][
+            list(_bom["mirrors"]["m1_options"])[0]]["mount"]
+        _tongue_w = _bolt_head + float(_mount0["bolt_safety_mm"])
+        _fillet_r = float(_mfg["fillet_radius_mm"])
+        frame, disk, reticle = build_laser_alignment_screen(
+            tongue_notch_width_mm=_tongue_w,
+            ridge_width_mm=1.0,
+            corner_fillet_mm=_fillet_r)
+        screen_asm = Compound(children=[frame, disk, reticle])
+        screen_asm.label = "laser_alignment_screen"
+        screen_path = out_dir / "alignment_screen.step"
+        export_step(screen_asm, str(screen_path))
+        print(f"Wrote {screen_path}")
+    except Exception as e:
+        print(f"[fixture] alignment screen skipped: {e}")
+
     if housing_compound is not None:
         _write_bom_csv(parts, bom_path, housing_compound, out_dir)
 

@@ -388,6 +388,15 @@ def build_solid_housing_cad(
                 add(sk)
             extrude(amount=depth, mode=Mode.SUBTRACT)
 
+        # Mount foot locating ridges: short tabs at the T-shape
+        # corners (u-constraint) and alongside the tongue
+        # (v-constraint).  Computed from mount params in housing.py.
+        _LOCATING_RIDGE_HEIGHT_MM = 0.8
+        for floor_z, corners in spec.mount_locating_ridges:
+            with BuildSketch(Plane.XY.offset(floor_z)):
+                Polygon(*[(x, y) for x, y in corners], align=None)
+            extrude(amount=_LOCATING_RIDGE_HEIGHT_MM)
+
         # Top cover ledge: widen cavity opening at top for recessed cover.
         with BuildSketch(Plane.XY.offset(z_top - _TOP_COVER_DEPTH_MM)):
             add(_tc_outline_sk.sketch)

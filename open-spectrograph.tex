@@ -707,7 +707,7 @@ both structural chassis and light-tight enclosure.  Optic mounts bolt to
 the housing floor via screws; the HASMA fiber adapter threads into the
 entrance wall via a 1/4''-36 tapped hole (tap drill printed, tapped
 post-print with a conical tap guide fixture).  Each mount integrates
-single-axis pitch adjustment via a living-hinge flexure (0.8\,mm web),
+single-axis pitch adjustment via a living-hinge flexure (1.6\,mm web),
 with a setscrew-driven foot trimmed at 2\textdegree{} to preload the
 hinge.  Captive TPU contact bumps provide three-point optic retention;
 the top setscrew preloads the optic against the two bottom bumps.  Two
@@ -1019,7 +1019,7 @@ prototype.}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_4_v0-model.png}
-\caption{CAD model of the v0.3.0 assembly.}
+\caption{CAD model of the v0.4.0 assembly.}
 \label{fig:v0-model}
 \end{figure}
 
@@ -1219,7 +1219,8 @@ Contact bumps & (in mounts) & TPU & Captive cylinders, three per mount \\
 \end{tabular*}
 \end{table}
 
-Each mount includes captive TPU contact bumps (three per mount) for
+Each mount slots into locating ridges on the housing cavity floor, and
+includes captive TPU contact bumps (three per mount) for
 setscrew-preloaded three-point retention.  The HASMA bore prints as a
 5.5\,mm tap drill hole; the 1/4''-36 thread is tapped post-print.
 
@@ -1239,6 +1240,7 @@ M2 fixture & \texttt{m2\_fixture.step} & PLA/PETG & Holds mirror during assembly
 F1 fixture & \texttt{f1\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
 Grating fixture & \texttt{grating\_fixture.step} & PLA/PETG & Holds grating during assembly \\
 HASMA tap guide & \texttt{hasma\_tap\_fixture.step} & PLA/PETG & Guides 1/4''-36 tap through bore \\
+Alignment screen & \texttt{alignment\_screen.step} & PLA/PETG & Laser centering target with tongue notch \\
 \bottomrule
 \end{tabular*}
 \end{table}
@@ -1247,21 +1249,25 @@ Each fixture envelopes the mount and optic with a 1\,mm contact lip,
 through-cuts beneath the foot tongue and pusher shelf to prevent
 bottoming out, and a setscrew access hole.  The HASMA tap guide is a
 1'' cone matching the housing flare, with a 1/4'' through bore for tap
-alignment.
+alignment.  The laser alignment screen is a three-body multi-color print
+(frame, white disk, black reticle) that straddles the mount foot tongue
+and sits at the optic vertex plane, providing a centering target for
+aligning each optic with a collimated laser before the housing is sealed.
 
 \subsection{Results}
 
 Figure~\ref{fig:cfl-spectrum} shows a compact fluorescent lamp (CFL)
-spectrum captured with the assembled v0.3.0 instrument.  The mercury emission lines are well resolved; a Gaussian fit to the
-isolated 405\,nm line gives FWHM~$= 0.86$\,nm, meeting the
-sub-1\,nm design target.
+spectrum captured with the assembled v0.4.0 instrument after
+laser-screen alignment of all four optics.  The mercury emission lines are used to perform a quadratic wavelength
+calibration; a Gaussian fit to the isolated Hg\,404.7\,nm line gives
+FWHM~$= 0.50$\,nm, exceeding the sub-1\,nm design target.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_6_cfl_spectrum.png}
-\caption{CFL spectrum captured with the v0.3.0 spectrograph.  50\,ms
+\caption{CFL spectrum captured with the v0.4.0 spectrograph.  50\,ms
 exposure, 100-frame average, 25\,$\mu$m SMA-905 fiber input.
-Wavelength calibrated from Hg reference lines.}
+Inset: Gaussian fit to the Hg\,404.7\,nm line.}
 \label{fig:cfl-spectrum}
 \end{figure}
 

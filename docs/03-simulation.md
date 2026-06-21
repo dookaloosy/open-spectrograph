@@ -275,7 +275,7 @@ both structural chassis and light-tight enclosure. Optic mounts bolt to
 the housing floor via screws; the HASMA fiber adapter threads into the
 entrance wall via a 1/4"-36 tapped hole (tap drill printed, tapped
 post-print with a conical tap guide fixture). Each mount integrates
-single-axis pitch adjustment via a living-hinge flexure (0.8 mm web),
+single-axis pitch adjustment via a living-hinge flexure (1.6 mm web),
 with a setscrew-driven foot trimmed at 2° to preload the hinge.
 Captive TPU contact bumps provide three-point optic retention; the top
 setscrew preloads the optic against the two bottom bumps. Two mount

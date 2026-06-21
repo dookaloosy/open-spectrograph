@@ -127,11 +127,10 @@ python export.py --baseline data/czerny_baseline_v0_design.toml --cad
 | Grating mount | `grating_mount.step` | PLA/PETG | Ruled grating mount |
 | Contact bumps | (included in mounts) | TPU | Captive cylinders, three per mount |
 
-Each optic mount includes captive TPU contact bumps — three cylinders
-seated in pockets in the bore wall.  The top setscrew preloads the
-optic against the two bottom bumps for three-point retention.  The
-HASMA bore prints as a 5.5 mm tap drill hole; the 1/4"-36 thread is
-tapped post-print.
+Each mount slots into locating ridges on the housing cavity floor, and
+includes captive TPU contact bumps (three per mount) for
+setscrew-preloaded three-point retention.  The HASMA bore prints as a
+5.5 mm tap drill hole; the 1/4"-36 thread is tapped post-print.
 
 ### 4.4.2 Assembly fixtures
 
@@ -142,6 +141,7 @@ tapped post-print.
 | F1 fixture | `f1_fixture.step` | Holds mirror during assembly |
 | Grating fixture | `grating_fixture.step` | Holds grating during assembly |
 | HASMA tap guide | `hasma_tap_fixture.step` | Guides 1/4"-36 tap through bore |
+| Alignment screen | `alignment_screen.step` | Laser centering target for each optic |
 
 Each optic mount fixture is an envelope around the mount's outer
 contour and the optic solid, with a 1 mm contact lip that supports
@@ -153,21 +153,27 @@ while the mount and optic are held in the fixture.
 
 The HASMA tap guide is a 1" cone matching the housing's 45° conical
 flare, with a 1/4" (6.35 mm) through bore that keeps the tap aligned
-to the bore axis.
+to the bore axis.  The laser alignment screen is a three-body
+multi-color print (frame, white disk, black reticle) that straddles the
+mount foot tongue and sits at the optic vertex plane, providing a
+centering target for aligning each optic with a collimated laser before
+the housing is sealed.
 
 ## 4.5 Results
 
-A CFL spectrum captured with the assembled v0.3.0 instrument confirms
-sub-1 nm resolution: a Gaussian fit to the isolated 405 nm Hg line
-gives FWHM = 0.86 nm.
+A CFL spectrum captured with the assembled v0.4.0 instrument after
+laser-screen alignment of all four optics.  The mercury emission lines
+are used to perform a quadratic wavelength calibration; a Gaussian fit
+to the isolated Hg 404.7 nm line gives FWHM = 0.50 nm, exceeding the
+sub-1 nm design target.
 
-![CFL spectrum — v0.3.0](figures/fig_6_cfl_spectrum.png)
+![CFL spectrum — v0.4.0](figures/fig_6_cfl_spectrum.png)
 
 ## 4.6 Summary
 
 | Metric | Target | Achieved | Notes |
 |--------|--------|----------|-------|
-| Resolution (ILF) | <1 nm EE76 | 0.86 nm FWHM (405 nm) | Measured from CFL spectrum |
+| Resolution (ILF) | <1 nm EE76 | 0.50 nm FWHM (404.7 nm) | Measured from CFL spectrum |
 | Spectral range | 400-700 nm | 350-750 nm | Grating eff. & mirror refl. |
 | Spectral coverage | ≥300 nm | 420 nm | TCD1304 at 14.5 nm/mm |
 | Throughput | >0.5% | 22-41% | All losses, λ-dependent |
@@ -175,8 +181,8 @@ gives FWHM = 0.86 nm.
 | RLD | ≤17 nm/mm | 14.5 nm/mm | 600 g/mm, f = 100 mm |
 | BOM cost | <$500 | ~$892 | **Exceeds target by 80%** |
 
-The v0 design meets the resolution target (0.86 nm FWHM measured at
-405 nm) and the spectral coverage target (≥300 nm) but misses the BOM
+The v0 design meets the resolution target (0.50 nm FWHM measured at
+404.7 nm) and the spectral coverage target (≥300 nm) but misses the BOM
 cost target. The primary bottleneck is the F1 focal length: Thorlabs'
 shortest cylindrical mirror is f = 25 mm, which limits the astigmatism
 correction and forces the optimizer into a wider layout (87×118 mm)

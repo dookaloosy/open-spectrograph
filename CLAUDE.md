@@ -38,8 +38,8 @@ TCD1304 SPI sensor board + controller (3648 px, 8 µm pitch,
 29.2 mm array, 16-bit, USB) → spectral data.
 
 **Key numbers:** ~15 nm/mm dispersion, ~440 nm per frame, 400-700 nm
-band, ~0.38 nm geometric bandpass, <$500 BOM target. Design wavelength
-550 nm.
+band, ~0.38 nm geometric (theoretical) bandpass, 0.50 nm measured FWHM
+at 404.7 nm, <$500 BOM target. Design wavelength 550 nm.
 
 ## Repo layout
 
@@ -92,7 +92,7 @@ python3 export.py --run output/optim_<run_dir> --render
 # Export — from baseline (no GA run needed; BOM resolved from baseline)
 python3 export.py --baseline data/czerny_baseline_v0_design.toml --layout
 python3 export.py --baseline data/czerny_baseline_v0_design.toml --cad --step
-# --cad generates bom.csv (tallied from placed CAD assembly labels)
+# --cad generates bom.csv, alignment_screen.step, fixtures, mounts
 
 # Tests
 python3 -m pytest tests/

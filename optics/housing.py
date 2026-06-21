@@ -188,6 +188,9 @@ class SolidHousingSpec:
     floor_steps: list[FloorStep] = field(default_factory=list)
     mount_floor_hulls: list[tuple[str, float, list[Vec2]]] = field(default_factory=list)
 
+    # Mount foot locating ridges: list of (floor_z, 4-corner rectangle).
+    mount_locating_ridges: list[tuple[float, list[Vec2]]] = field(default_factory=list)
+
     # Mount fastener holes (bolts + pushers, drilled from housing bottom)
     mount_fasteners: list[MountFastener] = field(default_factory=list)
     bolt_clearance_dia_mm: float = 0.0
@@ -718,6 +721,116 @@ def build_solid_housing_spec(
                 if m.z_range_mm is not None:
                     mount_floors[el.label] = (m.z_range_mm[0], op, hull)
 
+    # Mount foot locating ridges: short tabs at the T-shape corners
+    # (u-constraint) and alongside the tongue (v-constraint).
+    from optics.mounts import parse_mount_params, _perpendicular_in_dispersion_plane
+    from optics.mounts_cad import _load_manufacturing
+    mfg = _load_manufacturing()
+    mount_locating_ridges: list[tuple[float, list[Vec2]]] = []
+    _RIDGE_CLEARANCE = 0.15
+    _RIDGE_WIDTH = 1.0
+    for el in optics_scene.elements:
+        md = _label_mount.get(el.label)
+        if md is None:
+            continue
+        m = mount_by_parent.get(el.label)
+        if m is None or m.z_range_mm is None:
+            continue
+        try:
+            mount_type = str(md["type"])
+            mp = parse_mount_params(mount_type, md)
+        except (KeyError, ValueError):
+            continue
+
+        ax = el.axis
+        ip = _perpendicular_in_dispersion_plane(ax)
+        cx, cy = el.position[0], el.position[1]
+        floor_z = m.z_range_mm[0]
+
+        ct = float(el.params.get("center_thickness_mm", 0.0))
+        if hasattr(mp, "rear_wall_mm"):
+            u_vertex = 0.0
+            u_wall_rear = -ct - mp.rear_wall_mm
+        elif hasattr(mp, "slab_thickness_mm"):
+            u_vertex = -ct
+            u_wall_rear = u_vertex - mp.slab_thickness_mm
+        else:
+            continue
+
+        bolt_head_mm = mfg.bolt_dims[mp.foot_bolt_thread]["head_dia_mm"]
+        boss_half = 0.5 * (bolt_head_mm + mp.bolt_safety_mm)
+        u_front = u_vertex + mp.front_bolt_offset_mm
+        fillet_r = mfg.fillet_radius_mm
+
+        if el.kind == "grating":
+            v_half = 0.5 * float(el.params["size_mm"])
+        else:
+            v_half = 0.5 * float(el.params["diameter_mm"])
+
+        def _xy(v, u):
+            return (cx + v * ip[0] + u * ax[0],
+                    cy + v * ip[1] + u * ax[1])
+
+        cl = _RIDGE_CLEARANCE
+        rw = _RIDGE_WIDTH
+        _N_ARC = 8
+
+        # L-shaped corner ridges: arm + tongue joined through the
+        # filleted corner corner so the slicer traces a continuous
+        # toolpath.  One L per side.
+        R_inner = fillet_r - cl
+        R_outer = fillet_r - cl - rw
+        arm_v_end = v_half - cl
+        tongue_u_end = u_front - cl
+        v_c_abs = boss_half + fillet_r
+        u_c = u_vertex + fillet_r
+
+        if (arm_v_end > v_c_abs and tongue_u_end > u_c
+                and R_outer > 0.1):
+            for sign in (+1, -1):
+                v_c = sign * v_c_abs
+                pts = []
+                # Arm inner edge
+                pts.append(_xy(sign * arm_v_end, u_vertex + cl))
+                pts.append(_xy(v_c, u_vertex + cl))
+                # Inner arc through corner
+                for k in range(1, _N_ARC):
+                    t = k / (_N_ARC - 1)
+                    theta = math.radians(270 - sign * 90 * t)
+                    pts.append(_xy(
+                        v_c + R_inner * math.cos(theta),
+                        u_c + R_inner * math.sin(theta)))
+                # Tongue inner edge
+                pts.append(_xy(sign * (boss_half + cl), tongue_u_end))
+                # Tongue outer edge (return)
+                pts.append(_xy(sign * (boss_half + cl + rw), tongue_u_end))
+                # Outer arc through corner (reverse direction)
+                for k in range(_N_ARC):
+                    t = k / (_N_ARC - 1)
+                    theta = math.radians(
+                        (270 - sign * 90) + sign * 90 * t)
+                    pts.append(_xy(
+                        v_c + R_outer * math.cos(theta),
+                        u_c + R_outer * math.sin(theta)))
+                # Arm outer edge
+                pts.append(_xy(sign * arm_v_end, u_vertex + cl + rw))
+
+                mount_locating_ridges.append((floor_z, pts))
+
+        # Back ridge (u-constraint): tab behind the rear edge of
+        # the crossbar, spanning the full width.
+        back_v_half = v_half - cl
+        back_u_hi = u_wall_rear - cl
+        back_u_lo = back_u_hi - rw
+        if back_v_half > 1.0:
+            corners = [
+                _xy(-back_v_half, back_u_lo),
+                _xy(+back_v_half, back_u_lo),
+                _xy(+back_v_half, back_u_hi),
+                _xy(-back_v_half, back_u_hi),
+            ]
+            mount_locating_ridges.append((floor_z, corners))
+
     # Wall mount keep-out polygons (slit wall, detector wall).
     wall_polys: list[list[Vec2]] = []
     for m in mounts:
@@ -895,8 +1008,6 @@ def build_solid_housing_spec(
             kind="pusher", label=el.label))
 
     # Bolt dimensions from BOM manufacturing section
-    from optics.mounts_cad import _load_manufacturing
-    mfg = _load_manufacturing()
     bt = bolt_thread or "M2.5"
     bolt_cl = float(mfg.bolt_dims[bt]["clearance_dia_mm"])
     bolt_cb = float(mfg.bolt_dims[bt]["head_dia_mm"]) + 0.5
@@ -1024,6 +1135,7 @@ def build_solid_housing_spec(
         floor_steps=floor_steps,
         mount_floor_hulls=[(lbl, fz, list(hull))
                            for lbl, (fz, _op, hull) in mount_floors.items()],
+        mount_locating_ridges=mount_locating_ridges,
         mount_fasteners=mount_fasteners,
         bolt_clearance_dia_mm=bolt_cl,
         bolt_counterbore_dia_mm=bolt_cb,

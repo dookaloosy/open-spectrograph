@@ -5,6 +5,46 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-06-20
+
+Flexure stiffening, mount foot locating ridges, laser alignment screen.
+
+### Changed
+- `flexure_thickness_mm` increased from 0.80 mm to 1.60 mm across all
+  mounts (8× stiffer).  Back-of-envelope cantilever analysis predicts
+  < 0.11 nm spectral shift at 45° box tilt, down from ~1 nm.
+- `head_clearance_mm` increased from 5.0 mm to 6.0 mm.  Heat-set
+  insert bottom now clears the top TPU contact bump by 0.4 mm (was
+  overlapping by 0.6 mm).
+- `bolt_safety_mm` increased from 2.0 mm to 6.0 mm, widening the
+  foot tongue from 6 mm to 10 mm (3.3 mm wall per side of the 2.4 mm
+  clearance hole).  Prevents tongue splitting under bolt clamping load
+  due to weak interlayer adhesion.
+- `insert_bore_dia_mm` reduced from 3.0 mm to 2.8 mm for tighter
+  heat-set insert retention.
+
+### Added
+- Mount foot locating ridges on the housing cavity floor: L-shaped
+  raised tabs (0.8 mm tall, 1.0 mm wide) at each mount foot position.
+  Two L-ridges per mount follow the corner fillet through a continuous
+  8-point arc (slicer-friendly toolpath), plus one back ridge spanning
+  the crossbar width.  0.15 mm clearance constrains foot position to
+  ±0.15 mm during screw tightening.
+- `foot_outline_xy` field on `Mount` dataclass: actual T-shaped foot
+  outline (not convex hull) for housing ridge placement.
+- `mount_locating_ridges` field on `SolidHousingSpec`: pre-computed
+  ridge rectangles from mount parameters.
+- Laser alignment screen (`build_laser_alignment_screen` in
+  `mounts_cad.py`): three-body multi-color print (frame, white disk,
+  black reticle) with crosshair marks.  Base has tongue notch with
+  corner-filleted corners, shallow ridge avoidance cuts (ridge height
+  + clearance), and corner fillets matching both the foot fillet and
+  L-ridge inner arc.
+- Alignment screen exported as `alignment_screen.step` by `--cad`
+  (standalone three-body STEP with tongue notch and ridge avoidance).
+- `build_laser_alignment_holder` in `mounts_cad.py`: cuboid holder
+  with coaxial bores for laser pointer and HASMA adapter alignment.
+
 ## [0.3.0] — 2026-06-12
 
 Assembly fixtures, OAT tolerance overhaul, 0.86 nm first light.
@@ -58,7 +98,8 @@ Assembly fixtures, OAT tolerance overhaul, 0.86 nm first light.
 
 ### Added
 - CFL spectrum figure (`fig_6_cfl_spectrum.png`) and §4.5 Results in
-  paper. Measured 0.86 nm FWHM on isolated 405 nm Hg line.
+  paper. Measured 0.50 nm FWHM on isolated Hg 404.7 nm line
+  (quadratic calibration, 6-line, 0.17 nm RMS).
 - Normal tilt axes (θ\_M1, θ\_M2, θ\_F1, α) and cylinder axis
   rotation axes (φ\_M1, φ\_F1) in `scripts/tolerance.py`.
 - Per-wavelength ILF histogram debug panels for all tolerance axes.
@@ -156,6 +197,7 @@ Initial public release: v0 design (Thorlabs COTS optics).
 - Paper (LaTeX): design principles, simulation architecture, v0 design
   with performance and tolerance analysis.
 
+[0.4.0]: https://github.com/dookaloosy/open-spectrograph/releases/tag/v0.4.0
 [0.3.0]: https://github.com/dookaloosy/open-spectrograph/releases/tag/v0.3.0
 [0.2.0]: https://github.com/dookaloosy/open-spectrograph/releases/tag/v0.2.0
 [0.1.0]: https://github.com/dookaloosy/open-spectrograph/releases/tag/v0.1.0

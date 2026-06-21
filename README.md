@@ -3,6 +3,10 @@
 An open-source fiber spectrograph designed by evolutionary algorithm.
 Printable housing, off-the-shelf optics, USB spectral data output.
 
+![v0.4.0 CAD model](figures/fig_4_v0-model.png)
+
+![CFL spectrum — v0.4.0](figures/fig_6_cfl_spectrum.png)
+
 ## What is this?
 
 A fixed-grating **Czerny-Turner fiber spectrograph** that takes light in
@@ -19,11 +23,7 @@ function traces is what gets exported as printable STEP files.
 ```
 
 **Key specs:** ~15 nm/mm dispersion, 400-700 nm band, <1 nm resolution
-(0.86 nm FWHM measured at 405 nm Hg line).
-
-![v0.3.0 CAD model](figures/fig_4_v0-model.png)
-
-![CFL spectrum — v0.3.0](figures/fig_6_cfl_spectrum.png)
+(0.50 nm FWHM measured at 404.7 nm Hg line).
 
 ## Setup
 

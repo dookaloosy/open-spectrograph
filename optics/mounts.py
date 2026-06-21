@@ -57,6 +57,33 @@ def _foot_hull_xy(element, v_half_mm, boss_half_mm, u_rear, u_vertex, u_front):
     return tuple(convex_hull(pts))
 
 
+def _foot_outline_xy(element, v_half_mm, boss_half_mm, u_rear, u_vertex, u_front):
+    """Actual T-shaped foot outline projected to the xy plane.
+
+    Same vertices as ``_foot_hull_xy`` but without the convex hull —
+    preserves the concave notches at the crossbar-to-tongue junction.
+    Returns vertices in CCW winding order.
+    """
+    n = element.axis
+    ip = _perpendicular_in_dispersion_plane(n)
+    cx, cy = element.position[0], element.position[1]
+
+    def _xy(v, u):
+        return (cx + v * ip[0] + u * n[0],
+                cy + v * ip[1] + u * n[1])
+
+    return (
+        _xy(-v_half_mm, u_rear),
+        _xy(+v_half_mm, u_rear),
+        _xy(+v_half_mm, u_vertex),
+        _xy(+boss_half_mm, u_vertex),
+        _xy(+boss_half_mm, u_front),
+        _xy(-boss_half_mm, u_front),
+        _xy(-boss_half_mm, u_vertex),
+        _xy(-v_half_mm, u_vertex),
+    )
+
+
 def _oriented_rect_xy(element, v_half_mm, u_lo, u_hi):
     """Compute an oriented rectangle polygon in the xy plane.
 
@@ -338,12 +365,15 @@ def build_mirror_flexure_mount(
     slab_poly = _oriented_rect_xy(element, v_half_mm, u_wall_rear, u_vertex)
     foot_poly = _foot_hull_xy(element, v_half_mm, 0.5 * boss_width_mm,
                               u_wall_rear, u_vertex, u_foot_front)
+    foot_outline = _foot_outline_xy(element, v_half_mm, 0.5 * boss_width_mm,
+                                    u_wall_rear, u_vertex, u_foot_front)
     return Mount(label=f"{element.label}_mount", csg=mount_csg,
                  bbox_xy_mm=bbox_xy_mm,
                  parent_label=element.label,
                  z_range_mm=(w_foot_bot, w_top),
                  slab_polygon_xy=slab_poly,
-                 foot_polygon_xy=foot_poly)
+                 foot_polygon_xy=foot_poly,
+                 foot_outline_xy=foot_outline)
 
 
 def build_grating_flexure_mount(
@@ -446,12 +476,15 @@ def build_grating_flexure_mount(
     slab_poly = _oriented_rect_xy(element, v_half_mm, u_wall_rear, u_vertex)
     foot_poly = _foot_hull_xy(element, v_half_mm, 0.5 * boss_width_mm,
                               u_wall_rear, u_vertex, u_foot_front)
+    foot_outline = _foot_outline_xy(element, v_half_mm, 0.5 * boss_width_mm,
+                                    u_wall_rear, u_vertex, u_foot_front)
     return Mount(label=f"{element.label}_mount", csg=mount_csg,
                  bbox_xy_mm=bbox_xy_mm,
                  parent_label=element.label,
                  z_range_mm=(w_foot_bot, w_top),
                  slab_polygon_xy=slab_poly,
-                 foot_polygon_xy=foot_poly)
+                 foot_polygon_xy=foot_poly,
+                 foot_outline_xy=foot_outline)
 
 
 def build_oap_flexure_mount(
@@ -557,12 +590,15 @@ def build_oap_flexure_mount(
     slab_poly = _oriented_rect_xy(element, v_half_mm, u_wall_rear, u_plate_front)
     foot_poly = _foot_hull_xy(element, v_half_mm, 0.5 * boss_width_mm,
                               u_wall_rear, u_plate_front, u_foot_front)
+    foot_outline = _foot_outline_xy(element, v_half_mm, 0.5 * boss_width_mm,
+                                    u_wall_rear, u_plate_front, u_foot_front)
     return Mount(label=f"{element.label}_mount", csg=mount_csg,
                  bbox_xy_mm=bbox_xy_mm,
                  parent_label=element.label,
                  z_range_mm=(w_foot_bot, w_top),
                  slab_polygon_xy=slab_poly,
-                 foot_polygon_xy=foot_poly)
+                 foot_polygon_xy=foot_poly,
+                 foot_outline_xy=foot_outline)
 
 
 # ── Detector bbox (for feasibility checking) ──────────────────────────────

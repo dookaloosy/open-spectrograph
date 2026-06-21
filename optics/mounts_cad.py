@@ -2914,3 +2914,300 @@ def place_all_in_scene_frame(
         placed_by_label.setdefault(el.label, []).append(placed_piece)
 
     return placed, mount_only, placed_by_label
+
+
+def build_laser_alignment_holder(
+    *,
+    laser_bore_dia_mm: float = 10.5,
+    laser_bore_depth_mm: float = 20.0,
+    hasma_bore_dia_mm: float = 5.5,
+    hasma_bore_depth_mm: float = 8.0,
+    wall_mm: float = 3.0,
+    insert_depth_mm: float = 10.0,
+    mfg: ManufacturingParams | None = None,
+) -> Part:
+    """Laser-to-fiber alignment holder.
+
+    Cuboid with coaxial bores: laser module bore on one end, tappable
+    HASMA (1/4-36 UNS) bore on the other.  An M2 heat-set insert on the
+    sidewall at *insert_depth_mm* from the laser entry face holds the
+    laser module via a set screw.
+
+    Frame: bore axis along Z.  Laser enters from +Z, fiber exits -Z.
+    """
+    if mfg is None:
+        mfg = _load_manufacturing()
+
+    t = mfg.assembly_clearance_mm + mfg.print_tolerance_mm
+    laser_bore_r = 0.5 * laser_bore_dia_mm + t
+    hasma_bore_r = 0.5 * hasma_bore_dia_mm + t
+    cross_mm = 2 * laser_bore_r + 2 * wall_mm
+    total_length_mm = laser_bore_depth_mm + hasma_bore_depth_mm
+
+    with BuildPart() as bp:
+        # Outer cuboid — centered at XY, Z from 0 (HASMA face) to total_length
+        with BuildSketch(Plane.XY):
+            Rectangle(cross_mm, cross_mm)
+        extrude(amount=total_length_mm)
+
+        # Laser bore — from +Z face, 20mm deep
+        laser_entry_plane = Plane(
+            origin=(0, 0, total_length_mm),
+            x_dir=(1, 0, 0),
+            z_dir=(0, 0, -1),
+        )
+        with BuildSketch(laser_entry_plane):
+            Circle(radius=laser_bore_r)
+        extrude(amount=laser_bore_depth_mm, mode=Mode.SUBTRACT)
+
+        # HASMA tap bore — from -Z face (Z=0), coaxial
+        hasma_entry_plane = Plane(
+            origin=(0, 0, 0),
+            x_dir=(1, 0, 0),
+            z_dir=(0, 0, 1),
+        )
+        with BuildSketch(hasma_entry_plane):
+            Circle(radius=hasma_bore_r)
+        extrude(amount=hasma_bore_depth_mm, mode=Mode.SUBTRACT)
+
+        # M2 heat-set insert bore — sidewall at insert_depth from laser entry
+        insert_z = total_length_mm - insert_depth_mm
+        insert_plane = Plane(
+            origin=(0.5 * cross_mm, 0, insert_z),
+            x_dir=(0, 0, -1),
+            z_dir=(-1, 0, 0),
+        )
+        wall_to_bore_mm = 0.5 * cross_mm - laser_bore_r
+        with BuildSketch(insert_plane):
+            Circle(radius=0.5 * mfg.insert_bore_dia_mm)
+        extrude(amount=mfg.insert_length_mm, mode=Mode.SUBTRACT)
+
+        # M2 screw through-hole — full depth from outer wall to laser bore
+        screw_dia_mm = mfg.bolt_dims["M2"]["thread_dia_mm"]
+        with BuildSketch(insert_plane):
+            Circle(radius=0.5 * screw_dia_mm)
+        extrude(amount=0.5 * cross_mm, mode=Mode.SUBTRACT)
+
+        # Insert entry chamfer
+        chamfer_plane = Plane(
+            origin=(0.5 * cross_mm, 0, insert_z),
+            x_dir=(0, 0, -1),
+            z_dir=(-1, 0, 0),
+        )
+        chamfer_top_r = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
+        chamfer_bot_r = 0.5 * mfg.insert_bore_dia_mm
+        with BuildSketch(chamfer_plane):
+            Circle(radius=chamfer_top_r)
+        extrude(amount=mfg.insert_chamfer_mm, mode=Mode.SUBTRACT)
+
+    result = bp.part
+    result.label = "laser_alignment_holder"
+    result.color = _MOUNT_COLOR
+    return result
+
+
+def build_laser_alignment_screen(
+    *,
+    centerline_height_mm: float = 22.5,
+    screen_dia_mm: float = 20.0,
+    slab_width_mm: float = 25.0,
+    slab_thickness_mm: float = 3.0,
+    slab_margin_mm: float = 8.0,
+    base_width_mm: float = 25.0,
+    base_depth_mm: float = 12.0,
+    base_thickness_mm: float = 5.0,
+    disk_thickness_mm: float = 1.5,
+    mark_width_mm: float = 0.8,
+    mark_gap_mm: float = 3.0,
+    tongue_notch_width_mm: float = 0.0,
+    tongue_notch_clearance_mm: float = 0.3,
+    ridge_width_mm: float = 0.0,
+    ridge_clearance_mm: float = 0.15,
+    ridge_height_mm: float = 0.8,
+    corner_fillet_mm: float = 0.0,
+) -> tuple[Part, Part, Part]:
+    """Laser alignment screen — three bodies for multi-color printing.
+
+    Returns (frame, disk, reticle):
+
+    - **frame**: tombstone slab on a base (inverted-T profile) with a
+      circular through-hole.  Print in any color.
+    - **disk**: circular insert occupying the front half of the
+      aperture, with through-holes for the crosshair marks.
+      Print in white for visibility.
+    - **reticle**: absorbing backing disk occupying the rear half of
+      the aperture, with four radial marks that protrude forward
+      through the white disk's holes, flush with its front face.
+      Print in black for contrast.  No overhangs when printed
+      standing on the base.
+
+    The screen center sits at *centerline_height_mm* above the base
+    bottom.  *mark_gap_mm* is the clearance between the mark ends
+    and both the disk center and rim.
+
+    Frame: slab face normal along +Y, base on XZ plane, Z is up.
+    """
+    slab_top_mm = centerline_height_mm + 0.5 * screen_dia_mm + slab_margin_mm
+    slab_height_mm = slab_top_mm - base_thickness_mm
+    disk_r = 0.5 * screen_dia_mm
+    backing_thickness_mm = slab_thickness_mm - disk_thickness_mm
+    mark_len = disk_r - 2 * mark_gap_mm
+
+    # ── Frame (tombstone + base, with aperture hole) ─────────────
+    with BuildPart() as bp_frame:
+        base_plane = Plane(
+            origin=(0, 0, 0.5 * base_thickness_mm),
+            x_dir=(1, 0, 0),
+            z_dir=(0, 0, 1),
+        )
+        with BuildSketch(base_plane):
+            Rectangle(base_width_mm, base_depth_mm)
+        extrude(amount=0.5 * base_thickness_mm, both=True)
+
+        if tongue_notch_width_mm > 0:
+            notch_w = tongue_notch_width_mm + 2 * tongue_notch_clearance_mm
+            with BuildSketch(base_plane):
+                Rectangle(notch_w, base_depth_mm + 1.0)
+            extrude(amount=0.5 * base_thickness_mm, both=True,
+                    mode=Mode.SUBTRACT)
+
+        if ridge_width_mm > 0 and tongue_notch_width_mm > 0:
+            boss_half = 0.5 * tongue_notch_width_mm
+            rc = ridge_clearance_mm
+            rw = ridge_width_mm
+            cut_h = ridge_height_mm + tongue_notch_clearance_mm
+            cut_plane = Plane(
+                origin=(0, 0, 0),
+                x_dir=(1, 0, 0),
+                z_dir=(0, 0, 1),
+            )
+            # Tongue ridge slots: alongside the tongue, outboard of
+            # the tongue notch.  Shallow pocket from the base bottom.
+            slot_inner = boss_half + rc - tongue_notch_clearance_mm
+            slot_outer = boss_half + rc + rw + tongue_notch_clearance_mm
+            slot_w = slot_outer - slot_inner
+            slot_cx = 0.5 * (slot_inner + slot_outer)
+            for sign in (+1, -1):
+                with BuildSketch(cut_plane):
+                    with Locations([(sign * slot_cx, 0)]):
+                        Rectangle(slot_w, base_depth_mm + 1.0)
+                extrude(amount=cut_h, mode=Mode.SUBTRACT)
+            # Back ridge slot: across the back (-Y) edge of the base,
+            # clearing the arm ridges at u=0.
+            arm_slot_depth = rc + rw + tongue_notch_clearance_mm
+            arm_slot_cy = -0.5 * base_depth_mm + 0.5 * arm_slot_depth
+            with BuildSketch(cut_plane):
+                with Locations([(0, arm_slot_cy)]):
+                    Rectangle(base_width_mm + 1.0, arm_slot_depth)
+            extrude(amount=cut_h, mode=Mode.SUBTRACT)
+
+            # Fillet the vertical edges at the inner back corners of
+            # the tongue notch where it abuts the mount corner.
+            # Must clear both the foot fillet (fillet_radius_mm from
+            # BOM) and the L-ridge inner arc.
+            corner_r = corner_fillet_mm + tongue_notch_clearance_mm
+            half_notch = 0.5 * notch_w
+            back_y = -0.5 * base_depth_mm
+            _corner_edges = [
+                e for e in bp_frame.edges()
+                if e.geom_type == GeomType.LINE
+                and e.length > 1.0
+                and abs(abs(e.center().X) - half_notch) < 0.2
+                and abs(e.center().Y - back_y) < 0.5
+            ]
+            if _corner_edges:
+                from build123d import fillet as fillet3d
+                fillet3d(_corner_edges, radius=corner_r)
+
+            # Fillet the vertical edges where the tongue ridge slots
+            # meet the back ridge slot — clearing the L-ridge arc.
+            ridge_arc_r = corner_fillet_mm - ridge_clearance_mm
+            if ridge_arc_r > 0.1:
+                ridge_fillet_r = ridge_arc_r + tongue_notch_clearance_mm
+                arm_inner_y = (-0.5 * base_depth_mm
+                               + rc + rw + tongue_notch_clearance_mm)
+                _ridge_edges = [
+                    e for e in bp_frame.edges()
+                    if e.geom_type == GeomType.LINE
+                    and abs(e.length - cut_h) < 0.2
+                    and abs(abs(e.center().X) - slot_outer) < 0.2
+                    and abs(e.center().Y - arm_inner_y) < 0.2
+                ]
+                if _ridge_edges:
+                    fillet3d(_ridge_edges, radius=ridge_fillet_r)
+
+        slab_z_center = base_thickness_mm + 0.5 * slab_height_mm
+        slab_plane = Plane(
+            origin=(0, 0, slab_z_center),
+            x_dir=(1, 0, 0),
+            z_dir=(0, 0, 1),
+        )
+        with BuildSketch(slab_plane):
+            Rectangle(slab_width_mm, slab_thickness_mm)
+        extrude(amount=0.5 * slab_height_mm, both=True)
+
+        aperture_plane = Plane(
+            origin=(0, 0.5 * slab_thickness_mm, centerline_height_mm),
+            x_dir=(1, 0, 0),
+            z_dir=(0, -1, 0),
+        )
+        with BuildSketch(aperture_plane):
+            Circle(radius=disk_r)
+        extrude(amount=slab_thickness_mm, mode=Mode.SUBTRACT)
+
+    frame = bp_frame.part
+    frame.label = "laser_alignment_screen"
+    frame.color = _MOUNT_COLOR
+
+    # ── Disk (white, front half, with through-holes for marks) ───
+    disk_front_y = 0.5 * slab_thickness_mm
+    disk_plane = Plane(
+        origin=(0, disk_front_y, centerline_height_mm),
+        x_dir=(1, 0, 0),
+        z_dir=(0, -1, 0),
+    )
+    with BuildPart() as bp_disk:
+        with BuildSketch(disk_plane):
+            Circle(radius=disk_r)
+        extrude(amount=disk_thickness_mm)
+
+        for angle_deg in (0, 90, 180, 270):
+            rot_plane = disk_plane.rotated((0, angle_deg, 0))
+            with BuildSketch(rot_plane):
+                with Locations([(0.5 * mark_len + mark_gap_mm, 0)]):
+                    Rectangle(mark_len, mark_width_mm)
+            extrude(amount=disk_thickness_mm, mode=Mode.SUBTRACT)
+
+    disk = bp_disk.part
+    disk.label = "laser_alignment_disk"
+    disk.color = Color(0.95, 0.95, 0.95)
+
+    # ── Reticle (black backing disk + marks protruding through) ──
+    backing_front_y = disk_front_y - disk_thickness_mm
+    backing_plane = Plane(
+        origin=(0, backing_front_y, centerline_height_mm),
+        x_dir=(1, 0, 0),
+        z_dir=(0, -1, 0),
+    )
+    mark_plane = Plane(
+        origin=(0, backing_front_y, centerline_height_mm),
+        x_dir=(1, 0, 0),
+        z_dir=(0, 1, 0),
+    )
+    with BuildPart() as bp_reticle:
+        with BuildSketch(backing_plane):
+            Circle(radius=disk_r)
+        extrude(amount=backing_thickness_mm)
+
+        for angle_deg in (0, 90, 180, 270):
+            rot_plane = mark_plane.rotated((0, angle_deg, 0))
+            with BuildSketch(rot_plane):
+                with Locations([(0.5 * mark_len + mark_gap_mm, 0)]):
+                    Rectangle(mark_len, mark_width_mm)
+            extrude(amount=disk_thickness_mm)
+
+    reticle = bp_reticle.part
+    reticle.label = "laser_alignment_reticle"
+    reticle.color = Color(0.1, 0.1, 0.1)
+
+    return frame, disk, reticle
