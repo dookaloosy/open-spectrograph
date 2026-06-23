@@ -26,6 +26,8 @@ _DETECTOR_EXT_MARGIN_MM = 25.0
 _DETECTOR_EXT_HALF_WIDTH_MM = 40.0
 
 _WALL_THICKNESS_MM = 10.0
+_LID_CLEARANCE_MM = 2.0
+_TOP_COVER_DEPTH_MM = 3.0
 
 _SCREW_PILOT_R_MM = 0.8
 _SCREW_PILOT_DEPTH_MM = 5.0
@@ -77,7 +79,7 @@ def _mount_z_extent(
             half = 0.5 * el.params["size_mm"]
             z_top = max(z_top, half)
             z_bottom = min(z_bottom, -half)
-    return z_bottom - _WALL_THICKNESS_MM, z_top + _WALL_THICKNESS_MM
+    return z_bottom - _WALL_THICKNESS_MM, z_top + _LID_CLEARANCE_MM + _TOP_COVER_DEPTH_MM
 
 
 # ---- Floor step helpers ---------------------------------------------------
@@ -661,7 +663,7 @@ def build_solid_housing_spec(
     cavity_clearance_mm: float = 1.0,
     cavity_endmill_radius_mm: float = 1.0,
     pcba_pocket_clearance_mm: float = 2.5,
-    controller_cavity_wall_mm: float = 5.0,
+    controller_cavity_wall_mm: float = 3.0,
 ) -> SolidHousingSpec:
     """Compute all geometry for the unibody solid-subtract housing.
 
@@ -757,9 +759,8 @@ def build_solid_housing_spec(
         else:
             continue
 
-        bolt_head_mm = mfg.bolt_dims[mp.foot_bolt_thread]["head_dia_mm"]
-        boss_half = 0.5 * (bolt_head_mm + mp.bolt_safety_mm)
-        u_front = u_vertex + mp.front_bolt_offset_mm
+        boss_half = m.tongue_half_mm
+        u_front = m.u_front_mm
         fillet_r = mfg.fillet_radius_mm
 
         if el.kind == "grating":
@@ -987,7 +988,9 @@ def build_solid_housing_spec(
         else:
             continue
         u_vertex = -ct if hasattr(mp, "slab_thickness_mm") else 0.0
-        u_bolt = 0.5 * (u_wall_rear + u_vertex)
+        bolt_head_mm = mfg.bolt_dims[mp.foot_bolt_thread]["head_dia_mm"]
+        boss_width_mm = bolt_head_mm + mp.bolt_safety_mm
+        u_bolt = u_wall_rear + 0.5 * boss_width_mm
         u_front_bolt = (u_vertex + mp.front_bolt_offset_mm
                         if not hasattr(mp, "slab_thickness_mm")
                         else u_vertex + mp.front_bolt_offset_mm)
@@ -998,14 +1001,22 @@ def build_solid_housing_spec(
             return (cx + v_local * ip[0] + u_local * ax[0],
                     cy + v_local * ip[1] + u_local * ax[1])
 
-        for bv, bu in [(+v_bolt, u_bolt), (-v_bolt, u_bolt),
-                        (0.0, u_front_bolt)]:
+        for bv, bu in [(+v_bolt, u_front_bolt), (-v_bolt, u_front_bolt),
+                        (0.0, u_bolt)]:
             mount_fasteners.append(MountFastener(
                 xy=_to_world(bv, bu), floor_z=floor_z,
                 kind="bolt", label=el.label))
         mount_fasteners.append(MountFastener(
             xy=_to_world(0.0, u_pusher), floor_z=floor_z,
             kind="pusher", label=el.label))
+
+        if hasattr(mp, "roll_flexure_height_mm") and mp.roll_flexure_height_mm > 0:
+            u_roll_actuate = 0.5 * (u_wall_rear + u_vertex)
+            v_insert = mp.roll_insert_spacing_mm
+            for v_ss in [+v_insert, -v_insert]:
+                mount_fasteners.append(MountFastener(
+                    xy=_to_world(v_ss, u_roll_actuate), floor_z=floor_z,
+                    kind="pusher", label=el.label))
 
     # Bolt dimensions from BOM manufacturing section
     bt = bolt_thread or "M2.5"

@@ -80,16 +80,22 @@ screw_part              = "91771A108"   # #4-40 × 3/8" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 4.00          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 5.0          # tongue bolt u-offset (past COM for anti-topple)
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 [mirrors.m1_options.MPD129-G01]
 # Ø1" protected-aluminum 90° off-axis parabolic, RFL = 50.8 mm.
 # Eliminates spherical aberration and coma at the design reflection
@@ -117,16 +123,22 @@ screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
-foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 5.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
-front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from plate front
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.m1_options.MPD149-G01]
 # Ø1" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
@@ -153,16 +165,22 @@ screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
-foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 5.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
-front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from plate front
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.m1_options.MPD249-G01]
 # Ø2" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
@@ -189,16 +207,22 @@ screw_part              = "91771A194"   # #8-32 × 1/2" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 3.40          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
-foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 10.0          # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
-front_bolt_offset_mm    = 32.0          # tongue bolt u-offset (past COM for anti-topple)
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from plate front
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 # ── Cylindrical mirrors (CCM254 series) ──────────────────────────────────────
 # Concave cylindrical: curvature in one axis only. Used in modified CT
@@ -230,16 +254,22 @@ screw_part              = "91771A108"   # #4-40 × 3/8" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 4.00          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 5.0          # tongue bolt u-offset (past COM for anti-topple)
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 [mirrors.m2_options.MPD129-G01]
 # Ø1" protected-aluminum 90° off-axis parabolic, RFL = 50.8 mm.
 focal_length_mm         = 50.8          # reflected focal length (RFL)
@@ -265,16 +295,22 @@ screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
-foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 5.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
-front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from plate front
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.m2_options.MPD149-G01]
 # Ø1" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
@@ -301,16 +337,22 @@ screw_part              = "91771A109"   # #4-40 × 3/8" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 4.80          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
-foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 5.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
-front_bolt_offset_mm    = 16.0          # tongue bolt u-offset (past COM for anti-topple)
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from plate front
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.m2_options.MPD249-G01]
 # Ø2" protected-aluminum 90° off-axis parabolic, RFL = 101.6 mm.
@@ -337,16 +379,22 @@ screw_part              = "91771A194"   # #8-32 × 1/2" Phillips flat head screw
 slab_thickness_mm       = 6.0           # total slab depth in u direction
 head_clearance_mm       = 5.0           # material above optic centre to top face
 foot_clearance_mm       = 3.40          # material below optic centre to slab bottom
+pusher_shelf_mm         = 2.0
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
-foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
+foot_bolt_spacing_mm    = 10.0          # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
-front_bolt_offset_mm    = 32.0          # tongue bolt u-offset (past COM for anti-topple)
+front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from plate front
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR25-1205]
 # 25 × 25 mm — current default. Relaxes the clipping constraint,
@@ -375,14 +423,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR25-1208]
 # 25 × 25 mm, 1200 g/mm, blaze 750 nm. 25 × 25 mm
@@ -415,14 +468,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR25-1210]
 # 25 × 25 mm, 1200 g/mm, blaze 1000 nm. NIR-dominant blaze — peak
@@ -455,14 +513,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR13-1205]
 # 12.7 × 12.7 mm, 1200 g/mm, blaze 500 nm. Miniature ruled grating
@@ -491,14 +554,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR13-1208]
 # 12.7 × 12.7 mm, 1200 g/mm, blaze 750 nm. 12.7 mm version, blaze 750 nm.
@@ -527,14 +595,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR13-1210]
 # 12.7 × 12.7 mm, 1200 g/mm, blaze 1000 nm. 12.7 mm version, blaze 1000 nm.
@@ -563,14 +636,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR13-0605]
 # 12.7 × 12.7 mm, 600 g/mm, blaze 500 nm. Low-dispersion miniature
@@ -600,14 +678,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 3.5           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 5.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR25-0605]
 # 25 × 25 mm, 600 g/mm, blaze 500 nm. Low-dispersion standard
@@ -636,14 +719,19 @@ foot_clearance_mm       = 4.00          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 8.0           # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GR50A-0605]
 # 50 × 50 mm, 600 g/mm, blaze 500 nm. Low-dispersion large-aperture
@@ -674,14 +762,19 @@ foot_clearance_mm       = 3.40          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.GH50-12V]
 # 50 × 50 mm visible holographic grating, 1200 g/mm. No blaze
@@ -717,14 +810,19 @@ foot_clearance_mm       = 3.40          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [grating_options.EO43-006]
 # 50 × 50 mm ruled reflective grating, 1200 g/mm, blaze 500 nm.
@@ -759,14 +857,19 @@ foot_clearance_mm       = 3.40          # material below grating edge to slab bo
 rear_wall_mm            = 3.0           # material behind grating to back face
 # -- foot geometry --
 foot_thickness_mm       = 5.0           # foot slab thickness in w direction
-foot_bolt_thread        = "M2.5"          # foot rail clearance hole thread
+foot_bolt_thread        = "M2"            # foot rail clearance hole thread
 foot_bolt_spacing_mm    = 18.0          # bolt half-spacing in v direction
 bolt_safety_mm          = 2.0           # clearance around bolt head to foot edge
 front_bolt_offset_mm    = 8.0           # tongue bolt u-offset from grating front face
 # -- flexure --
-flexure_thickness_mm    = 0.80          # web thickness in u
-flexure_gap_mm          = 1.0           # relief gap height between slab and foot
+pitch_flexure_thickness_mm    = 0.80          # web thickness in u
+pitch_flexure_gap_mm          = 1.0           # relief gap height between slab and foot
 trim_angle_deg          = 2.0           # foot bottom angle for pitch preload
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 [slits]
 # Both entrance and exit apertures are bare multimode SMA fibers
@@ -884,9 +987,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 3.5
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 5.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f1_options.PF07-03-G01]
 # Ø3/4" (19.05mm) protected-Al flat, 6mm thick. Matched to 25.4mm
@@ -917,9 +1025,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 7.5
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f1_options.PF10-03-G01]
 # Ø1" (25.4mm) protected-Al flat, 6mm thick. Matched to 50.8mm
@@ -953,9 +1066,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 8.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f1_options.PF20-03-G01]
 # Ø2" (50.8mm) protected-Al flat, 12mm thick.
@@ -982,9 +1100,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 20.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f2_options.PF05-03-G01]
 mirror_type             = "flat"
@@ -1010,9 +1133,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 3.5
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 5.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f2_options.PF07-03-G01]
 mirror_type             = "flat"
@@ -1038,9 +1166,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 7.5
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f2_options.PF10-03-G01]
 mirror_type             = "flat"
@@ -1066,9 +1199,14 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 8.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 
 [mirrors.f2_options.PF20-03-G01]
 mirror_type             = "flat"
@@ -1094,7 +1232,12 @@ foot_bolt_thread        = "M2.5"
 foot_bolt_spacing_mm    = 20.0
 bolt_safety_mm          = 2.0
 front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 0.80
-flexure_gap_mm          = 1.0
+pitch_flexure_thickness_mm    = 0.80
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 9.7
+roll_blade_spacing_mm    = 6.7
+roll_pedestal_gap_mm      = 1.0
 

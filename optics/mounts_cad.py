@@ -118,16 +118,17 @@ def build_mirror_flexure_mount_cad(
     bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
     bolt_clearance_mm = mfg.bolt_dims[params.foot_bolt_thread]["clearance_dia_mm"]
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
-                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    foot_length_mm = params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_foot_front = u_vertex + foot_length_mm
-    u_bolt = 0.5 * (u_wall_rear + u_vertex)
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
 
     # -- w positions (vertical, +w = up) --
     w_top = optic_radius_mm + params.head_clearance_mm
     w_bot = -(optic_radius_mm + params.foot_clearance_mm)
     slab_depth_mm = u_vertex - u_wall_rear
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     w_foot_mid = w_foot_bot + 0.5 * params.foot_thickness_mm
 
     # -- v positions (dispersion axis) --
@@ -135,6 +136,10 @@ def build_mirror_flexure_mount_cad(
 
     # -- bore diameters --
     front_bore_dia_mm = optic_diameter_mm + mfg.assembly_clearance_mm + mfg.print_tolerance_mm
+
+    # -- roll flexure u-depth (slab depth only, no overhang) --
+    roll_u_depth = slab_depth_mm
+    u_roll_actuate = 0.5 * (u_wall_rear + u_vertex)
 
     # -- derived dimensions --
     slab_total_u_mm = u_foot_front - u_wall_rear
@@ -199,41 +204,52 @@ def build_mirror_flexure_mount_cad(
                         mode=Mode.SUBTRACT)
 
         # 3. Face mill (sketched on body front face).
+        #    Two bands: optic pocket (w_bot to w_top) and pitch shelf
         front_face = mount.faces().sort_by(Axis.Z)[-1]
         mill_depth_mm = u_foot_front - u_vertex
-        w_slab_center = 0.5 * (w_top + w_bot)
+        w_slab_center = 0.5 * (w_top + w_shelf_bot)
         with BuildSketch(front_face) as mill_sk:
             with Locations(Pos(0, w_slab_center - w_center)):
-                Rectangle(2 * v_half_mm, w_top - w_bot)
+                Rectangle(2 * v_half_mm, w_top - w_shelf_bot)
         extrude(mill_sk.sketch, amount=-mill_depth_mm, mode=Mode.SUBTRACT)
 
         # 4. Shape the foot (sketched on body bottom face).
+        #    2 forward bolts at ±v_bolt, 1 aft bolt at center.
+        #    Single wide tongue spanning both forward bolt positions.
+        tongue_width_mm = 2 * v_bolt + boss_width_mm
         foot_face = (mount.faces()
                      .filter_by(Axis.Y).sort_by(Axis.Y)[0])
         foot_u_mid = foot_face.center().Z
         with BuildSketch(foot_face) as foot_sk:
+            # Full-width rear section (slab footprint).
             with Locations(Pos(0, 0.5 * (u_wall_rear + u_vertex)
                                - foot_u_mid)):
                 Rectangle(2 * v_half_mm, slab_depth_mm)
-            tongue_u_len = u_front_bolt - u_wall_rear
-            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt)
-                               - foot_u_mid)):
-                Rectangle(boss_width_mm, tongue_u_len)
-            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
-                Circle(0.5 * boss_width_mm)
-            tongue_verts = [
+            # Single wide tongue forward.
+            tongue_u_len = u_front_bolt + 0.5 * boss_width_mm - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt
+                               + 0.5 * boss_width_mm) - foot_u_mid)):
+                Rectangle(tongue_width_mm, tongue_u_len)
+            # Fillet all four junction corners.
+            fillet_verts = [
                 v for v in foot_sk.vertices()
-                if abs(v.Y - (u_vertex - foot_u_mid)) < 0.1
-                and abs(abs(v.X) - 0.5 * boss_width_mm) < 0.1
+                if (abs(v.Y - (u_vertex - foot_u_mid)) < 0.1
+                    and abs(abs(v.X) - 0.5 * tongue_width_mm) < 0.1)
+                or (abs(v.Y - (u_front_bolt + 0.5 * boss_width_mm
+                               - foot_u_mid)) < 0.1
+                    and abs(abs(v.X) - 0.5 * tongue_width_mm) < 0.1)
             ]
-            if tongue_verts:
-                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+            if fillet_verts:
+                try:
+                    fillet2d(fillet_verts, radius=mfg.fillet_radius_mm)
+                except Exception:
+                    pass
         extrude(foot_sk.sketch, amount=-(w_top - w_foot_bot),
                 mode=Mode.INTERSECT)
 
     # 5. Pusher shelf (fused outside BuildPart to avoid coplanar issues).
     _shelf_plane = Plane(
-        origin=(0, w_bot, u_pusher),
+        origin=(0, w_shelf_bot, u_pusher),
         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
     with BuildPart() as _shelf_bp:
         with BuildSketch(_shelf_plane):
@@ -245,7 +261,7 @@ def build_mirror_flexure_mount_cad(
     _fillet_edges = [
         e for e in result.edges()
         if abs(e.center().Z) < 0.1
-        and w_bot < e.center().Y < w_bot + params.pusher_shelf_mm
+        and w_shelf_bot < e.center().Y < w_shelf_bot + params.pusher_shelf_mm
         and abs(math.hypot(e.center().X, e.center().Z - u_pusher) - _shelf_r) < 0.5
     ]
     if _fillet_edges and _shelf_fillet_r > 0.1:
@@ -261,14 +277,14 @@ def build_mirror_flexure_mount_cad(
     with BuildPart() as mount2:
         mount2._obj = result
 
-        u_flexure_front = u_wall_rear + params.flexure_thickness_mm
+        u_flexure_front = u_wall_rear + params.pitch_flexure_thickness_mm
         flexure_u_mm = u_foot_front - u_flexure_front
         flexure_plane = Plane(origin=(0, 0, u_flexure_front),
                               x_dir=(1, 0, 0), z_dir=(0, 0, 1))
         with BuildSketch(flexure_plane) as flex_sk:
-            w_flexure_mid = w_bot - 0.5 * params.flexure_gap_mm
+            w_flexure_mid = w_shelf_bot - 0.5 * params.pitch_flexure_gap_mm
             with Locations(Pos(0, w_flexure_mid)):
-                Rectangle(2 * v_half_mm, params.flexure_gap_mm)
+                Rectangle(2 * v_half_mm, params.pitch_flexure_gap_mm)
         extrude(flex_sk.sketch, until=Until.LAST, mode=Mode.SUBTRACT)
 
         trim_u_end = u_foot_front + boss_width_mm
@@ -286,6 +302,117 @@ def build_mirror_flexure_mount_cad(
             )
         extrude(trim_sk.sketch, until=Until.LAST, both=True,
                 mode=Mode.SUBTRACT)
+
+        # 7b. Roll flexure blade cuts.
+        if params.roll_flexure_height_mm > 0 and params.roll_blade_thickness_mm > 0:
+            blade_t = params.roll_blade_thickness_mm
+            v_insert = params.roll_insert_spacing_mm
+            v_anchor = params.roll_blade_spacing_mm
+            v_ped_inner = v_anchor + params.roll_pedestal_gap_mm
+            ped_w = optic_radius_mm - v_ped_inner
+            v_top_blade = v_anchor * (w_bot / w_roll_bot)
+
+            dv = v_top_blade - v_anchor
+            dw = w_bot - w_roll_bot
+            blade_len = math.hypot(dv, dw)
+            nv = dw / blade_len
+            nw = -dv / blade_len
+            ht = 0.5 * blade_t
+
+            # Extend blade polygon past the relief rectangle on
+            # both ends so blades merge into the rigid plates
+            # rather than being cut off at the band boundary.
+            # Bottom: continue centerline until v = mount wall.
+            w_bot_ext = w_roll_bot * optic_radius_mm / v_anchor
+            v_bot_ext = optic_radius_mm
+            # Top: continue centerline to w = 0 (virtual pivot).
+            v_top_ext = 0.0
+            w_top_ext = 0.0
+            blade_plus = [
+                (v_bot_ext + ht * nv, w_bot_ext + ht * nw),
+                (v_bot_ext - ht * nv, w_bot_ext - ht * nw),
+                (v_top_ext - ht * nv, w_top_ext - ht * nw),
+                (v_top_ext + ht * nv, w_top_ext + ht * nw),
+            ]
+            blade_minus = list(reversed([(-v, w) for v, w in blade_plus]))
+
+            # Pedestals: trapezoidal, inner face parallel to blade
+            # with constant perpendicular gap, outer face at mount wall.
+            w_ped_top = w_bot
+            w_ped_bot = w_roll_bot + 1.0
+            gap = params.roll_pedestal_gap_mm
+            total_off = ht + gap
+
+            def _ped_inner_v(w_at):
+                t = (w_at - w_roll_bot - total_off * nw) / dw
+                return v_anchor + total_off * nv + t * dv
+
+            v_inner_top = _ped_inner_v(w_ped_top)
+            v_inner_bot = _ped_inner_v(w_ped_bot)
+
+            # Center block: sidewalls parallel to blades, 1mm below w_bot.
+            w_ctr_top = w_bot - 1.0
+            w_ctr_bot = w_roll_bot
+
+            def _ctr_wall_v(w_at):
+                t = (w_at - w_roll_bot + total_off * nw) / dw
+                return v_anchor - total_off * nv + t * dv
+
+            v_ctr_top = _ctr_wall_v(w_ctr_top)
+            v_ctr_bot = _ctr_wall_v(w_ctr_bot)
+
+            roll_cut_plane = Plane(origin=(0, 0, u_wall_rear),
+                                   x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+            w_roll_mid = 0.5 * (w_roll_bot + w_bot)
+            with BuildSketch(roll_cut_plane) as roll_sk:
+                with Locations(Pos(0, w_roll_mid)):
+                    Rectangle(2 * optic_radius_mm,
+                              params.roll_flexure_height_mm)
+                Polygon(*blade_plus, align=None, mode=Mode.SUBTRACT)
+                Polygon(*blade_minus, align=None, mode=Mode.SUBTRACT)
+                for sign in (+1, -1):
+                    Polygon(
+                        (sign * optic_radius_mm, w_ped_top),
+                        (sign * v_inner_top, w_ped_top),
+                        (sign * v_inner_bot, w_ped_bot),
+                        (sign * optic_radius_mm, w_ped_bot),
+                        align=None, mode=Mode.SUBTRACT)
+                Polygon(
+                    (+v_ctr_top, w_ctr_top),
+                    (-v_ctr_top, w_ctr_top),
+                    (-v_ctr_bot, w_ctr_bot),
+                    (+v_ctr_bot, w_ctr_bot),
+                    align=None, mode=Mode.SUBTRACT)
+            extrude(roll_sk.sketch, amount=roll_u_depth,
+                    mode=Mode.SUBTRACT)
+
+            # 7c. Roll setscrew insert bores — enter from foot
+            # bottom, bore upward through foot + gap + into shelf.
+            roll_bore_depth = (params.foot_thickness_mm
+                               + params.pitch_flexure_gap_mm
+                               + params.pusher_shelf_mm)
+            roll_ss_plane = Plane(
+                origin=(0, w_foot_bot, 0),
+                x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+            for v_ss in [+v_insert, -v_insert]:
+                with BuildSketch(roll_ss_plane) as roll_ss_sk:
+                    with Locations(Pos(v_ss, -u_roll_actuate)):
+                        Circle(radius=0.5 * mfg.insert_bore_dia_mm)
+                extrude(roll_ss_sk.sketch,
+                        amount=roll_bore_depth,
+                        mode=Mode.SUBTRACT)
+            # Chamfers on insert entries (foot bottom face).
+            chamfer_top_r = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
+            chamfer_bot_r = 0.5 * mfg.insert_bore_dia_mm
+            for v_ss in [+v_insert, -v_insert]:
+                with Locations(Pos(v_ss,
+                                   w_foot_bot + 0.5 * mfg.insert_chamfer_mm,
+                                   u_roll_actuate)):
+                    Cone(bottom_radius=chamfer_bot_r,
+                         top_radius=chamfer_top_r,
+                         height=mfg.insert_chamfer_mm,
+                     rotation=(90, 0, 0),
+                     mode=Mode.SUBTRACT)
 
         # ── Internal features ─────────────────────────────────────────
 
@@ -317,12 +444,12 @@ def build_mirror_flexure_mount_cad(
                 Circle(radius=0.5 * mfg.insert_bore_dia_mm)
         extrude(ss_sk.sketch, amount=ss_bore_depth_mm, mode=Mode.SUBTRACT)
 
-        # 10. Foot screw pilot holes.
+        # 10. Foot screw pilot holes (2 forward + 1 aft).
         foot_pilot_dia_mm = mfg.bolt_dims[params.foot_bolt_thread]["tap_drill_dia_mm"]
         foot_hole_plane = Plane(origin=(0, w_foot_bot, 0),
                                 x_dir=(1, 0, 0), z_dir=(0, -1, 0))
-        for bv, bu in [(+v_bolt, u_bolt), (-v_bolt, u_bolt),
-                        (0, u_front_bolt)]:
+        for bv, bu in [(+v_bolt, u_front_bolt), (-v_bolt, u_front_bolt),
+                        (0, u_bolt)]:
             with BuildSketch(foot_hole_plane) as ins_sk:
                 with Locations(Pos(bv, bu)):
                     Circle(radius=0.5 * foot_pilot_dia_mm)
@@ -357,6 +484,7 @@ def build_mirror_flexure_mount_cad(
                      rotation=chamfer_rot, mode=Mode.SUBTRACT)
 
     result = mount2.part
+    result.color = _MOUNT_COLOR
     result.label = "flexure_mount"
 
     # Build captive TPU contact bumps as a separate body.
@@ -408,19 +536,23 @@ def build_oap_flexure_mount_cad(
 
     bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
-                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    foot_length_mm = params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_foot_front = u_plate_front + foot_length_mm
-    u_bolt = 0.5 * (u_wall_rear + u_plate_front)
     slab_total_u_mm = u_foot_front - u_wall_rear
 
     # -- w positions --
     w_top = optic_radius_mm + hc
     w_bot = -(optic_radius_mm + fc)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
 
     # -- v positions --
     v_half_mm = optic_radius_mm
+
+    # -- roll flexure u-depth --
+    roll_u_depth = slab_depth_mm
+    u_roll_actuate = 0.5 * (u_wall_rear + u_plate_front)
 
     # -- derived --
     full_height_mm = w_top - w_foot_bot
@@ -430,6 +562,7 @@ def build_oap_flexure_mount_cad(
     v_bolt = params.foot_bolt_spacing_mm
     u_pusher = u_plate_front
     u_front_bolt = u_plate_front + params.front_bolt_offset_mm
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
     u_mid = u_wall_rear + 0.5 * slab_total_u_mm
 
     # -- named planes --
@@ -485,18 +618,18 @@ def build_oap_flexure_mount_cad(
         front_face = mount.faces().sort_by(Axis.Z)[-1]
         front_center_y = front_face.center().Y
         mill_depth_mm = u_foot_front - u_plate_front
-        w_slab_center = 0.5 * (w_top + w_bot)
+        w_slab_center = 0.5 * (w_top + w_shelf_bot)
         with BuildSketch(front_face) as mill_sk:
             with Locations(Pos(0, w_slab_center - front_center_y)):
-                Rectangle(2 * v_half_mm, w_top - w_bot)
+                Rectangle(2 * v_half_mm, w_top - w_shelf_bot)
         extrude(mill_sk.sketch, amount=-mill_depth_mm, mode=Mode.SUBTRACT)
 
-        # 4. Foot screw pilot holes (sketched on body bottom face).
+        # 4. Foot screw pilot holes (2 forward + 1 aft).
         foot_pilot_dia_mm = mfg.bolt_dims[params.foot_bolt_thread]["tap_drill_dia_mm"]
         foot_bottom_face = (mount.faces()
                             .filter_by(Axis.Y).sort_by(Axis.Y)[0])
-        for bv, bu in [(+v_bolt, u_bolt), (-v_bolt, u_bolt),
-                        (0, u_front_bolt)]:
+        for bv, bu in [(+v_bolt, u_front_bolt), (-v_bolt, u_front_bolt),
+                        (0, u_bolt)]:
             with BuildSketch(foot_bottom_face) as ins_sk:
                 with Locations(Pos(bv, bu - u_mid)):
                     Circle(radius=0.5 * foot_pilot_dia_mm)
@@ -510,6 +643,8 @@ def build_oap_flexure_mount_cad(
                 mode=Mode.SUBTRACT)
 
         # 5. Shape the foot (sketched on body bottom face).
+        #    Single wide tongue spanning both forward bolt positions.
+        tongue_width_mm = 2 * v_bolt + boss_width_mm
         foot_face = (mount.faces()
                      .filter_by(Axis.Y).sort_by(Axis.Y)[0])
         foot_u_mid = foot_face.center().Z
@@ -517,30 +652,34 @@ def build_oap_flexure_mount_cad(
             with Locations(Pos(0, 0.5 * (u_wall_rear + u_plate_front)
                                - foot_u_mid)):
                 Rectangle(2 * v_half_mm, slab_depth_mm)
-            tongue_u_len = u_front_bolt - u_wall_rear
-            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt)
-                               - foot_u_mid)):
-                Rectangle(boss_width_mm, tongue_u_len)
-            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
-                Circle(0.5 * boss_width_mm)
-            tongue_verts = [
+            tongue_u_len = u_front_bolt + 0.5 * boss_width_mm - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt
+                               + 0.5 * boss_width_mm) - foot_u_mid)):
+                Rectangle(tongue_width_mm, tongue_u_len)
+            fillet_verts = [
                 v for v in foot_sk.vertices()
-                if abs(v.Y - (u_plate_front - foot_u_mid)) < 0.1
-                and abs(abs(v.X) - 0.5 * boss_width_mm) < 0.1
+                if (abs(v.Y - (u_plate_front - foot_u_mid)) < 0.1
+                    and abs(abs(v.X) - 0.5 * tongue_width_mm) < 0.1)
+                or (abs(v.Y - (u_front_bolt + 0.5 * boss_width_mm
+                               - foot_u_mid)) < 0.1
+                    and abs(abs(v.X) - 0.5 * tongue_width_mm) < 0.1)
             ]
-            if tongue_verts:
-                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+            if fillet_verts:
+                try:
+                    fillet2d(fillet_verts, radius=mfg.fillet_radius_mm)
+                except Exception:
+                    pass
         extrude(foot_sk.sketch, amount=-(w_top - w_foot_bot),
                 mode=Mode.INTERSECT)
 
         # 6. Flexure relief.
-        u_flexure_front = u_wall_rear + params.flexure_thickness_mm
+        u_flexure_front = u_wall_rear + params.pitch_flexure_thickness_mm
         flexure_plane = Plane(origin=(0, 0, u_flexure_front),
                               x_dir=(1, 0, 0), z_dir=(0, 0, 1))
         with BuildSketch(flexure_plane) as flex_sk:
-            w_flexure_mid = w_bot - 0.5 * params.flexure_gap_mm
+            w_flexure_mid = w_shelf_bot - 0.5 * params.pitch_flexure_gap_mm
             with Locations(Pos(0, w_flexure_mid)):
-                Rectangle(2 * v_half_mm, params.flexure_gap_mm)
+                Rectangle(2 * v_half_mm, params.pitch_flexure_gap_mm)
         extrude(flex_sk.sketch, until=Until.LAST, mode=Mode.SUBTRACT)
 
         # 7. Trim foot bottom: wedge triangle in u-w plane.
@@ -560,6 +699,107 @@ def build_oap_flexure_mount_cad(
         extrude(trim_sk.sketch, until=Until.LAST, both=True,
                 mode=Mode.SUBTRACT)
 
+        # 7b. Roll flexure blade cuts.
+        if params.roll_flexure_height_mm > 0 and params.roll_blade_thickness_mm > 0:
+            blade_t = params.roll_blade_thickness_mm
+            v_insert = params.roll_insert_spacing_mm
+            v_anchor = params.roll_blade_spacing_mm
+            v_ped_inner = v_anchor + params.roll_pedestal_gap_mm
+            ped_w = optic_radius_mm - v_ped_inner
+            v_top_blade = v_anchor * (w_bot / w_roll_bot)
+
+            dv = v_top_blade - v_anchor
+            dw = w_bot - w_roll_bot
+            blade_len = math.hypot(dv, dw)
+            nv = dw / blade_len
+            nw = -dv / blade_len
+            ht = 0.5 * blade_t
+
+            w_bot_ext = w_roll_bot * optic_radius_mm / v_anchor
+            v_bot_ext = optic_radius_mm
+            v_top_ext = 0.0
+            w_top_ext = 0.0
+            blade_plus = [
+                (v_bot_ext + ht * nv, w_bot_ext + ht * nw),
+                (v_bot_ext - ht * nv, w_bot_ext - ht * nw),
+                (v_top_ext - ht * nv, w_top_ext - ht * nw),
+                (v_top_ext + ht * nv, w_top_ext + ht * nw),
+            ]
+            blade_minus = list(reversed([(-v, w) for v, w in blade_plus]))
+
+            w_ped_top = w_bot
+            w_ped_bot = w_roll_bot + 1.0
+            gap = params.roll_pedestal_gap_mm
+            total_off = ht + gap
+
+            def _ped_inner_v(w_at):
+                t = (w_at - w_roll_bot - total_off * nw) / dw
+                return v_anchor + total_off * nv + t * dv
+
+            v_inner_top = _ped_inner_v(w_ped_top)
+            v_inner_bot = _ped_inner_v(w_ped_bot)
+
+            w_ctr_top = w_bot - 1.0
+            w_ctr_bot = w_roll_bot
+
+            def _ctr_wall_v(w_at):
+                t = (w_at - w_roll_bot + total_off * nw) / dw
+                return v_anchor - total_off * nv + t * dv
+
+            v_ctr_top = _ctr_wall_v(w_ctr_top)
+            v_ctr_bot = _ctr_wall_v(w_ctr_bot)
+
+            roll_cut_plane = Plane(origin=(0, 0, u_wall_rear),
+                                   x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+            w_roll_mid = 0.5 * (w_roll_bot + w_bot)
+            with BuildSketch(roll_cut_plane) as roll_sk:
+                with Locations(Pos(0, w_roll_mid)):
+                    Rectangle(2 * optic_radius_mm,
+                              params.roll_flexure_height_mm)
+                Polygon(*blade_plus, align=None, mode=Mode.SUBTRACT)
+                Polygon(*blade_minus, align=None, mode=Mode.SUBTRACT)
+                for sign in (+1, -1):
+                    Polygon(
+                        (sign * optic_radius_mm, w_ped_top),
+                        (sign * v_inner_top, w_ped_top),
+                        (sign * v_inner_bot, w_ped_bot),
+                        (sign * optic_radius_mm, w_ped_bot),
+                        align=None, mode=Mode.SUBTRACT)
+                Polygon(
+                    (+v_ctr_top, w_ctr_top),
+                    (-v_ctr_top, w_ctr_top),
+                    (-v_ctr_bot, w_ctr_bot),
+                    (+v_ctr_bot, w_ctr_bot),
+                    align=None, mode=Mode.SUBTRACT)
+            extrude(roll_sk.sketch, amount=roll_u_depth,
+                    mode=Mode.SUBTRACT)
+
+            # Roll insert bores — from foot bottom through foot + gap + shelf.
+            roll_bore_depth = (params.foot_thickness_mm
+                               + params.pitch_flexure_gap_mm
+                               + params.pusher_shelf_mm)
+            roll_ss_plane = Plane(
+                origin=(0, w_foot_bot, 0),
+                x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+            for v_ss in [+v_insert, -v_insert]:
+                with BuildSketch(roll_ss_plane) as roll_ss_sk:
+                    with Locations(Pos(v_ss, -u_roll_actuate)):
+                        Circle(radius=0.5 * mfg.insert_bore_dia_mm)
+                extrude(roll_ss_sk.sketch,
+                        amount=roll_bore_depth,
+                        mode=Mode.SUBTRACT)
+            chamfer_top_r_roll = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
+            chamfer_bot_r_roll = 0.5 * mfg.insert_bore_dia_mm
+            for v_ss in [+v_insert, -v_insert]:
+                with Locations(Pos(v_ss,
+                                   w_foot_bot + 0.5 * mfg.insert_chamfer_mm,
+                                   u_roll_actuate)):
+                    Cone(bottom_radius=chamfer_bot_r_roll,
+                         top_radius=chamfer_top_r_roll,
+                         height=mfg.insert_chamfer_mm,
+                     rotation=(90, 0, 0),
+                     mode=Mode.SUBTRACT)
+
         # 8. Pusher insert chamfer on the tilted surface.
         chamfer_top_r = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
         chamfer_bot_r = 0.5 * mfg.insert_bore_dia_mm
@@ -578,11 +818,9 @@ def build_oap_flexure_mount_cad(
                      rotation=chamfer_rot, mode=Mode.SUBTRACT)
 
 
-    # Pusher shelf: semicircular lip above w_bot at u_pusher so the
-    # setscrew can't slip past the flexure lip when it opens.
-    # Built outside BuildPart to avoid coplanar boolean issues.
+    # Pusher shelf: semicircular lip at w_shelf_bot.
     _shelf_plane = Plane(
-        origin=(0, w_bot, u_pusher),
+        origin=(0, w_shelf_bot, u_pusher),
         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
     with BuildPart() as _shelf_bp:
         with BuildSketch(_shelf_plane):
@@ -594,7 +832,7 @@ def build_oap_flexure_mount_cad(
     _fillet_edges = [
         e for e in result.edges()
         if abs(e.center().Z) < 0.1
-        and w_bot < e.center().Y < w_bot + params.pusher_shelf_mm
+        and w_shelf_bot < e.center().Y < w_shelf_bot + params.pusher_shelf_mm
         and abs(math.hypot(e.center().X, e.center().Z - u_pusher) - _shelf_r) < 0.5
     ]
     if _fillet_edges and _shelf_fillet_r > 0.1:
@@ -602,6 +840,8 @@ def build_oap_flexure_mount_cad(
             result = result.fillet(_shelf_fillet_r, _fillet_edges)
         except Exception:
             pass
+    result = Part(result.wrapped)
+    result.color = _MOUNT_COLOR
     result.label = "flexure_mount"
     return result
 
@@ -635,6 +875,8 @@ def build_grating_flexure_mount_cad(
     # -- w positions (vertical, +w = up) --
     w_top = half_size_mm + hc
     w_bot = -(half_size_mm + fc)
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
 
     # -- v positions (dispersion axis) --
     v_half_mm = half_size_mm
@@ -652,24 +894,27 @@ def build_grating_flexure_mount_cad(
     w_bump_upper = bump_center_w
 
     # -- foot --
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     w_foot_mid = w_foot_bot + 0.5 * params.foot_thickness_mm
 
     # -- derived --
     bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
-                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    foot_length_mm = params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_foot_front = u_vertex + foot_length_mm
     slab_total_u_mm = u_foot_front - u_wall_rear
     full_height_mm = w_top - w_foot_bot
     w_center = 0.5 * (w_top + w_foot_bot)
 
+    # -- roll flexure u-depth --
+    roll_u_depth = slab_depth_mm
+    u_roll_actuate = 0.5 * (u_wall_rear + u_vertex)
+
     # -- foot geometry --
     v_bolt = params.foot_bolt_spacing_mm
     u_pusher = 0.0
     u_front_bolt = params.front_bolt_offset_mm
-    u_bolt = 0.5 * (u_wall_rear + u_vertex)
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
     u_setscrew = -0.5 * grating_thickness_mm
 
     # -- named planes --
@@ -717,18 +962,18 @@ def build_grating_flexure_mount_cad(
         # 3. Face mill (sketched on body front face).
         front_face = mount.faces().sort_by(Axis.Z)[-1]
         mill_depth_mm = u_foot_front - u_vertex
-        w_slab_center = 0.5 * (w_top + w_bot)
+        w_slab_center = 0.5 * (w_top + w_shelf_bot)
         with BuildSketch(front_face) as mill_sk:
             with Locations(Pos(0, w_slab_center - w_center)):
-                Rectangle(2 * v_half_mm, w_top - w_bot)
+                Rectangle(2 * v_half_mm, w_top - w_shelf_bot)
         extrude(mill_sk.sketch, amount=-mill_depth_mm, mode=Mode.SUBTRACT)
 
-        # 4. Foot screw pilot holes (sketched on body bottom face).
+        # 4. Foot screw pilot holes (2 forward + 1 aft).
         foot_pilot_dia_mm = mfg.bolt_dims[params.foot_bolt_thread]["tap_drill_dia_mm"]
         foot_bottom_face = (mount.faces()
                             .filter_by(Axis.Y).sort_by(Axis.Y)[0])
-        for bv, bu in [(+v_bolt, u_bolt), (-v_bolt, u_bolt),
-                        (0, u_front_bolt)]:
+        for bv, bu in [(+v_bolt, u_front_bolt), (-v_bolt, u_front_bolt),
+                        (0, u_bolt)]:
             with BuildSketch(foot_bottom_face) as ins_sk:
                 with Locations(Pos(bv, bu - u_mid)):
                     Circle(radius=0.5 * foot_pilot_dia_mm)
@@ -742,6 +987,8 @@ def build_grating_flexure_mount_cad(
                 mode=Mode.SUBTRACT)
 
         # 5. Shape the foot (sketched on body bottom face).
+        #    Single wide tongue spanning both forward bolt positions.
+        tongue_width_mm = 2 * v_bolt + boss_width_mm
         foot_face = (mount.faces()
                      .filter_by(Axis.Y).sort_by(Axis.Y)[0])
         foot_u_mid = foot_face.center().Z
@@ -749,30 +996,34 @@ def build_grating_flexure_mount_cad(
             with Locations(Pos(0, 0.5 * (u_wall_rear + u_vertex)
                                - foot_u_mid)):
                 Rectangle(2 * v_half_mm, slab_depth_mm)
-            tongue_u_len = u_front_bolt - u_wall_rear
-            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt)
-                               - foot_u_mid)):
-                Rectangle(boss_width_mm, tongue_u_len)
-            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
-                Circle(0.5 * boss_width_mm)
-            tongue_verts = [
+            tongue_u_len = u_front_bolt + 0.5 * boss_width_mm - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt
+                               + 0.5 * boss_width_mm) - foot_u_mid)):
+                Rectangle(tongue_width_mm, tongue_u_len)
+            fillet_verts = [
                 v for v in foot_sk.vertices()
-                if abs(v.Y - (u_vertex - foot_u_mid)) < 0.1
-                and abs(abs(v.X) - 0.5 * boss_width_mm) < 0.1
+                if (abs(v.Y - (u_vertex - foot_u_mid)) < 0.1
+                    and abs(abs(v.X) - 0.5 * tongue_width_mm) < 0.1)
+                or (abs(v.Y - (u_front_bolt + 0.5 * boss_width_mm
+                               - foot_u_mid)) < 0.1
+                    and abs(abs(v.X) - 0.5 * tongue_width_mm) < 0.1)
             ]
-            if tongue_verts:
-                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+            if fillet_verts:
+                try:
+                    fillet2d(fillet_verts, radius=mfg.fillet_radius_mm)
+                except Exception:
+                    pass
         extrude(foot_sk.sketch, amount=-(w_top - w_foot_bot),
                 mode=Mode.INTERSECT)
 
         # 6. Flexure relief: sketch on flexure front face, extrude forward.
-        u_flexure_front = u_wall_rear + params.flexure_thickness_mm
+        u_flexure_front = u_wall_rear + params.pitch_flexure_thickness_mm
         flexure_plane = Plane(origin=(0, 0, u_flexure_front),
                               x_dir=(1, 0, 0), z_dir=(0, 0, 1))
         with BuildSketch(flexure_plane) as flex_sk:
-            w_flexure_mid = w_bot - 0.5 * params.flexure_gap_mm
+            w_flexure_mid = w_shelf_bot - 0.5 * params.pitch_flexure_gap_mm
             with Locations(Pos(0, w_flexure_mid)):
-                Rectangle(2 * v_half_mm, params.flexure_gap_mm)
+                Rectangle(2 * v_half_mm, params.pitch_flexure_gap_mm)
         extrude(flex_sk.sketch, until=Until.LAST, mode=Mode.SUBTRACT)
 
         # 7. Trim foot bottom: wedge triangle in u-w plane, extrude in v.
@@ -791,6 +1042,107 @@ def build_grating_flexure_mount_cad(
             )
         extrude(trim_sk.sketch, until=Until.LAST, both=True,
                 mode=Mode.SUBTRACT)
+
+        # 7b. Roll flexure blade cuts.
+        if params.roll_flexure_height_mm > 0 and params.roll_blade_thickness_mm > 0:
+            blade_t = params.roll_blade_thickness_mm
+            v_insert = params.roll_insert_spacing_mm
+            v_anchor = params.roll_blade_spacing_mm
+            v_ped_inner = v_anchor + params.roll_pedestal_gap_mm
+            ped_w = half_size_mm - v_ped_inner
+            v_top_blade = v_anchor * (w_bot / w_roll_bot)
+
+            dv = v_top_blade - v_anchor
+            dw = w_bot - w_roll_bot
+            blade_len = math.hypot(dv, dw)
+            nv = dw / blade_len
+            nw = -dv / blade_len
+            ht = 0.5 * blade_t
+
+            w_bot_ext = w_roll_bot * half_size_mm / v_anchor
+            v_bot_ext = half_size_mm
+            v_top_ext = 0.0
+            w_top_ext = 0.0
+            blade_plus = [
+                (v_bot_ext + ht * nv, w_bot_ext + ht * nw),
+                (v_bot_ext - ht * nv, w_bot_ext - ht * nw),
+                (v_top_ext - ht * nv, w_top_ext - ht * nw),
+                (v_top_ext + ht * nv, w_top_ext + ht * nw),
+            ]
+            blade_minus = list(reversed([(-v, w) for v, w in blade_plus]))
+
+            w_ped_top = w_bot
+            w_ped_bot = w_roll_bot + 1.0
+            gap = params.roll_pedestal_gap_mm
+            total_off = ht + gap
+
+            def _ped_inner_v(w_at):
+                t = (w_at - w_roll_bot - total_off * nw) / dw
+                return v_anchor + total_off * nv + t * dv
+
+            v_inner_top = _ped_inner_v(w_ped_top)
+            v_inner_bot = _ped_inner_v(w_ped_bot)
+
+            w_ctr_top = w_bot - 1.0
+            w_ctr_bot = w_roll_bot
+
+            def _ctr_wall_v(w_at):
+                t = (w_at - w_roll_bot + total_off * nw) / dw
+                return v_anchor - total_off * nv + t * dv
+
+            v_ctr_top = _ctr_wall_v(w_ctr_top)
+            v_ctr_bot = _ctr_wall_v(w_ctr_bot)
+
+            roll_cut_plane = Plane(origin=(0, 0, u_wall_rear),
+                                   x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+            w_roll_mid = 0.5 * (w_roll_bot + w_bot)
+            with BuildSketch(roll_cut_plane) as roll_sk:
+                with Locations(Pos(0, w_roll_mid)):
+                    Rectangle(2 * half_size_mm,
+                              params.roll_flexure_height_mm)
+                Polygon(*blade_plus, align=None, mode=Mode.SUBTRACT)
+                Polygon(*blade_minus, align=None, mode=Mode.SUBTRACT)
+                for sign in (+1, -1):
+                    Polygon(
+                        (sign * half_size_mm, w_ped_top),
+                        (sign * v_inner_top, w_ped_top),
+                        (sign * v_inner_bot, w_ped_bot),
+                        (sign * half_size_mm, w_ped_bot),
+                        align=None, mode=Mode.SUBTRACT)
+                Polygon(
+                    (+v_ctr_top, w_ctr_top),
+                    (-v_ctr_top, w_ctr_top),
+                    (-v_ctr_bot, w_ctr_bot),
+                    (+v_ctr_bot, w_ctr_bot),
+                    align=None, mode=Mode.SUBTRACT)
+            extrude(roll_sk.sketch, amount=roll_u_depth,
+                    mode=Mode.SUBTRACT)
+
+            # Roll insert bores — from foot bottom through foot + gap + shelf.
+            roll_bore_depth = (params.foot_thickness_mm
+                               + params.pitch_flexure_gap_mm
+                               + params.pusher_shelf_mm)
+            roll_ss_plane = Plane(
+                origin=(0, w_foot_bot, 0),
+                x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+            for v_ss in [+v_insert, -v_insert]:
+                with BuildSketch(roll_ss_plane) as roll_ss_sk:
+                    with Locations(Pos(v_ss, -u_roll_actuate)):
+                        Circle(radius=0.5 * mfg.insert_bore_dia_mm)
+                extrude(roll_ss_sk.sketch,
+                        amount=roll_bore_depth,
+                        mode=Mode.SUBTRACT)
+            chamfer_top_r_roll = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
+            chamfer_bot_r_roll = 0.5 * mfg.insert_bore_dia_mm
+            for v_ss in [+v_insert, -v_insert]:
+                with Locations(Pos(v_ss,
+                                   w_foot_bot + 0.5 * mfg.insert_chamfer_mm,
+                                   u_roll_actuate)):
+                    Cone(bottom_radius=chamfer_bot_r_roll,
+                         top_radius=chamfer_top_r_roll,
+                         height=mfg.insert_chamfer_mm,
+                     rotation=(90, 0, 0),
+                     mode=Mode.SUBTRACT)
 
         # 8. Chamfers on insert holes.
         chamfer_top_r = 0.5 * mfg.insert_bore_dia_mm + mfg.insert_chamfer_mm
@@ -816,11 +1168,9 @@ def build_grating_flexure_mount_cad(
                      rotation=chamfer_rot, mode=Mode.SUBTRACT)
 
 
-    # Pusher shelf: semicircular lip above w_bot at u_pusher so the
-    # setscrew can't slip past the flexure lip when it opens.
-    # Built outside BuildPart to avoid coplanar boolean issues.
+    # Pusher shelf: semicircular lip at w_shelf_bot.
     _shelf_plane = Plane(
-        origin=(0, w_bot, u_pusher),
+        origin=(0, w_shelf_bot, u_pusher),
         x_dir=(1, 0, 0), z_dir=(0, 1, 0))
     with BuildPart() as _shelf_bp:
         with BuildSketch(_shelf_plane):
@@ -832,7 +1182,7 @@ def build_grating_flexure_mount_cad(
     _fillet_edges = [
         e for e in result.edges()
         if abs(e.center().Z) < 0.1
-        and w_bot < e.center().Y < w_bot + params.pusher_shelf_mm
+        and w_shelf_bot < e.center().Y < w_shelf_bot + params.pusher_shelf_mm
         and abs(math.hypot(e.center().X, e.center().Z - u_pusher) - _shelf_r) < 0.5
     ]
     if _fillet_edges and _shelf_fillet_r > 0.1:
@@ -840,6 +1190,8 @@ def build_grating_flexure_mount_cad(
             result = result.fillet(_shelf_fillet_r, _fillet_edges)
         except Exception:
             pass
+    result = Part(result.wrapped)
+    result.color = _MOUNT_COLOR
     result.label = "flexure_mount"
 
     _bump_color = Color(0.30, 0.60, 0.85)
@@ -867,8 +1219,9 @@ def build_grating_flexure_mount_cad(
 _VENDOR_STEP_BY_PART = {
     "HASMA":         "data/step/HASMA.step",
     "94459A110":     "data/step/94459A110_Heat-Set Inserts for Plastic.STEP",
+    "92605A043":     "data/step/92605A043_Stainless Steel Flat-Tip Set Screw.STEP",
     "92605A044":     "data/step/92605A044_Stainless Steel Flat-Tip Set Screw.STEP",
-    "92605A047":     "data/step/92605A047_Stainless Steel Flat-Tip Set Screw.STEP",
+    "92605A912":     "data/step/92605A912_Stainless Steel Flat-Tip Set Screw.STEP",
     "91771A108":     "data/step/91771A108_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
     "91771A109":     "data/step/91771A109_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
     "91771A194":     "data/step/91771A194_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
@@ -1012,8 +1365,8 @@ def _procedural_heat_set_insert() -> Part:
     return bp.part
 
 
-def _procedural_flat_tip_set_screw() -> Part:
-    """Procedural M2x6 flat-tip set screw (92605A047).
+def _procedural_pitch_set_screw() -> Part:
+    """Procedural M2×5 flat-tip set screw (92605A044).
 
     Threaded cylinder with hex socket.  Reads thread diameter from the
     BOM [manufacturing.bolts.M2] section.
@@ -1025,7 +1378,7 @@ def _procedural_flat_tip_set_screw() -> Part:
     with bom_path.open("rb") as f:
         bom = tomllib.load(f)
     major_dia_mm = float(bom["manufacturing"]["bolts"]["M2"]["thread_dia_mm"])
-    length_mm = 6.0            # M2x6 (part number encodes length)
+    length_mm = 5.0
     hex_socket_af_mm = 0.9   # M2 hex socket across-flats
     hex_depth_mm = 1.0       # socket depth from one end
 
@@ -1035,7 +1388,6 @@ def _procedural_flat_tip_set_screw() -> Part:
             align=(Align.CENTER, Align.CENTER, Align.MIN),
             rotation=(-90, 0, 0),
         )
-        # Hex socket bore from top (max Y end)
         socket_plane = Plane(origin=(0, length_mm, 0),
                              x_dir=(1, 0, 0), z_dir=(0, -1, 0))
         with BuildSketch(socket_plane):
@@ -1044,12 +1396,12 @@ def _procedural_flat_tip_set_screw() -> Part:
                 radius=0.5 * hex_socket_af_mm / math.cos(math.radians(30)),
                 side_count=6)
         extrude(amount=hex_depth_mm, mode=Mode.SUBTRACT)
-    bp.part.label = "92605A047_procedural"
+    bp.part.label = "92605A044_procedural"
     return bp.part
 
 
-def _procedural_short_flat_tip_set_screw() -> Part:
-    """Procedural M2×5 flat-tip set screw (92605A044).
+def _procedural_retention_set_screw() -> Part:
+    """Procedural M2×4 flat-tip set screw (92605A043).
 
     Threaded cylinder with hex socket.  Reads thread diameter from the
     BOM [manufacturing.bolts.M2] section.
@@ -1061,7 +1413,7 @@ def _procedural_short_flat_tip_set_screw() -> Part:
     with bom_path.open("rb") as f:
         bom = tomllib.load(f)
     major_dia_mm = float(bom["manufacturing"]["bolts"]["M2"]["thread_dia_mm"])
-    length_mm = 5.0
+    length_mm = 4.0
     hex_socket_af_mm = 0.9
     hex_depth_mm = 1.0
 
@@ -1079,7 +1431,42 @@ def _procedural_short_flat_tip_set_screw() -> Part:
                 radius=0.5 * hex_socket_af_mm / math.cos(math.radians(30)),
                 side_count=6)
         extrude(amount=hex_depth_mm, mode=Mode.SUBTRACT)
-    bp.part.label = "92605A044_procedural"
+    bp.part.label = "92605A043_procedural"
+    return bp.part
+
+
+def _procedural_roll_set_screw() -> Part:
+    """Procedural M2×8 flat-tip set screw (92605A912).
+
+    Threaded cylinder with hex socket.  Reads thread diameter from the
+    BOM [manufacturing.bolts.M2] section.
+
+    Axis along +Y.
+    """
+    import tomllib
+    bom_path = _get_bom_path()
+    with bom_path.open("rb") as f:
+        bom = tomllib.load(f)
+    major_dia_mm = float(bom["manufacturing"]["bolts"]["M2"]["thread_dia_mm"])
+    length_mm = 8.0
+    hex_socket_af_mm = 0.9
+    hex_depth_mm = 1.0
+
+    with BuildPart() as bp:
+        Cylinder(
+            radius=0.5 * major_dia_mm, height=length_mm,
+            align=(Align.CENTER, Align.CENTER, Align.MIN),
+            rotation=(-90, 0, 0),
+        )
+        socket_plane = Plane(origin=(0, length_mm, 0),
+                             x_dir=(1, 0, 0), z_dir=(0, -1, 0))
+        with BuildSketch(socket_plane):
+            from build123d import RegularPolygon
+            RegularPolygon(
+                radius=0.5 * hex_socket_af_mm / math.cos(math.radians(30)),
+                side_count=6)
+        extrude(amount=hex_depth_mm, mode=Mode.SUBTRACT)
+    bp.part.label = "92605A912_procedural"
     return bp.part
 
 
@@ -1166,8 +1553,9 @@ def _procedural_flat_head_screw(
 _PROCEDURAL_BUILDERS: dict[str, callable] = {
     "HASMA":     _procedural_hasma,
     "94459A110": _procedural_heat_set_insert,
-    "92605A047": _procedural_flat_tip_set_screw,
-    "92605A044": _procedural_short_flat_tip_set_screw,
+    "92605A044": _procedural_pitch_set_screw,
+    "92605A043": _procedural_retention_set_screw,
+    "92605A912": _procedural_roll_set_screw,
     "99461A915": _procedural_pan_head_screw,
 }
 
@@ -1403,11 +1791,16 @@ def build_f_mirror_assembly(part_number: str, *,
     mfg = _load_manufacturing()
     insert_flange_r = 0.5 * mfg.insert_flange_dia_mm
     optic_R = 0.5 * diameter_mm
+    u_vertex = 0.0
     u_wall_rear = -thickness_mm - params.rear_wall_mm
-    u_bolt = 0.5 * u_wall_rear
+    boss_width_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"] + params.bolt_safety_mm
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
+    u_setscrew = 0.5 * (u_wall_rear + u_vertex)
     w_top = optic_R + params.head_clearance_mm
     w_bot = -(optic_R + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
 
     def _trim_offset(u):
         return (u + insert_flange_r - u_wall_rear) * math.tan(
@@ -1418,20 +1811,38 @@ def build_f_mirror_assembly(part_number: str, *,
     ins_bottom = ins_bottom.translate((0, -ins_bottom.bounding_box().min.Y, 0))
     ins_top = raw_insert.translate((0, -raw_insert.bounding_box().max.Y, 0))
 
-    children.append(ins_top.translate((0, w_top, u_bolt)))
+    children.append(ins_top.translate((0, w_top, u_setscrew)))
 
-    raw_ss = _load_or_procedural("92605A044")
+    front_bore_dia = diameter_mm + mfg.assembly_clearance_mm + mfg.print_tolerance_mm
+    bore_r = 0.5 * (front_bore_dia + params.optic_clearance_mm)
+    bump_center_r = bore_r + params.contact_radius_mm - params.contact_offset_mm
+    w_bump_top = bump_center_r + params.contact_radius_mm
+
+    raw_ss = _load_or_procedural("92605A043")
     ss_top = raw_ss.rotate(Axis.Z, 90.0)
     ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
-    children.append(ss_top.translate((0, w_top - params.head_clearance_mm, u_bolt)))
+    children.append(ss_top.translate((0, w_bump_top, u_setscrew)))
 
     off_pusher = _trim_offset(0.0)
     children.append(ins_bottom.translate((0, w_foot_bot + off_pusher, 0.0)))
 
-    raw_pusher = _load_or_procedural("92605A047")
+    raw_pusher = _load_or_procedural("92605A044")
     pusher = raw_pusher.rotate(Axis.X, 180.0)
     pusher = pusher.translate((0, -pusher.bounding_box().max.Y, 0))
-    children.append(pusher.translate((0, w_bot, 0.0)))
+    children.append(pusher.translate((0, w_shelf_bot, 0.0)))
+
+    if params.roll_flexure_height_mm > 0:
+        u_roll_actuate = 0.5 * (u_wall_rear + 0.0)
+        v_insert = params.roll_insert_spacing_mm
+        w_ped_bot = w_roll_bot + 1.0
+        raw_roll_ss = _load_or_procedural("92605A912")
+        roll_ss = raw_roll_ss.rotate(Axis.X, 180.0)
+        roll_ss = roll_ss.translate((0, -roll_ss.bounding_box().max.Y, 0))
+        for sign in (+1, -1):
+            children.append(ins_bottom.translate((
+                sign * v_insert, w_foot_bot + off_pusher, u_roll_actuate)))
+            children.append(roll_ss.translate((
+                sign * v_insert, w_ped_bot, u_roll_actuate)))
 
     asm = Compound(children=children)
     asm.label = f"assembly_{part_number}"
@@ -1734,9 +2145,14 @@ def _flexure_params_from_bom(mount_dict: dict) -> RoundMirrorFlexureMountParams:
         foot_bolt_spacing_mm=float(mount_dict["foot_bolt_spacing_mm"]),
         bolt_safety_mm=float(mount_dict["bolt_safety_mm"]),
         front_bolt_offset_mm=float(mount_dict["front_bolt_offset_mm"]),
-        flexure_thickness_mm=float(mount_dict["flexure_thickness_mm"]),
-        flexure_gap_mm=float(mount_dict["flexure_gap_mm"]),
+        pitch_flexure_thickness_mm=float(mount_dict["pitch_flexure_thickness_mm"]),
+        pitch_flexure_gap_mm=float(mount_dict["pitch_flexure_gap_mm"]),
         trim_angle_deg=float(mount_dict["trim_angle_deg"]),
+        roll_flexure_height_mm=float(mount_dict["roll_flexure_height_mm"]),
+        roll_blade_thickness_mm=float(mount_dict["roll_blade_thickness_mm"]),
+        roll_insert_spacing_mm=float(mount_dict["roll_insert_spacing_mm"]),
+        roll_blade_spacing_mm=float(mount_dict["roll_blade_spacing_mm"]),
+        roll_pedestal_gap_mm=float(mount_dict["roll_pedestal_gap_mm"]),
         contact_radius_mm=float(mount_dict["contact_radius_mm"]),
         contact_offset_mm=float(mount_dict["contact_offset_mm"]),
         contact_separation_mm=float(mount_dict["contact_separation_mm"]),
@@ -1822,9 +2238,14 @@ def _oap_flexure_params_from_bom(mount_dict: dict) -> OAPMirrorFlexureMountParam
         foot_bolt_spacing_mm=float(mount_dict["foot_bolt_spacing_mm"]),
         bolt_safety_mm=float(mount_dict["bolt_safety_mm"]),
         front_bolt_offset_mm=float(mount_dict["front_bolt_offset_mm"]),
-        flexure_thickness_mm=float(mount_dict["flexure_thickness_mm"]),
-        flexure_gap_mm=float(mount_dict["flexure_gap_mm"]),
+        pitch_flexure_thickness_mm=float(mount_dict["pitch_flexure_thickness_mm"]),
+        pitch_flexure_gap_mm=float(mount_dict["pitch_flexure_gap_mm"]),
         trim_angle_deg=float(mount_dict["trim_angle_deg"]),
+        roll_flexure_height_mm=float(mount_dict["roll_flexure_height_mm"]),
+        roll_blade_thickness_mm=float(mount_dict["roll_blade_thickness_mm"]),
+        roll_insert_spacing_mm=float(mount_dict["roll_insert_spacing_mm"]),
+        roll_blade_spacing_mm=float(mount_dict["roll_blade_spacing_mm"]),
+        roll_pedestal_gap_mm=float(mount_dict["roll_pedestal_gap_mm"]),
     )
 
 
@@ -1893,7 +2314,7 @@ def build_oap_flexure_full_assembly(
 
     Hardware placed:
       - 1 pusher insert (centre, through foot)
-      - 1 flat-tip pusher setscrew (92605A047) at flexure gap
+      - 1 flat-tip pusher setscrew (92605A044) at flexure gap
       - 3 flat head screws on alternating bolt-circle holes (odd for M1, even for M2)
 
     All positions derived from BOM params. No hardcoded dimensions.
@@ -1926,9 +2347,12 @@ def build_oap_flexure_full_assembly(
     optic_R = 0.5 * diameter_mm
     u_plate_front = -thickness_mm
     u_wall_rear = u_plate_front - params.slab_thickness_mm
-    u_bolt = 0.5 * (u_wall_rear + u_plate_front)
+    boss_width_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"] + params.bolt_safety_mm
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
     w_bot = -(optic_R + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     v_bolt = params.foot_bolt_spacing_mm
 
     def _trim_offset(u):
@@ -1945,11 +2369,11 @@ def build_oap_flexure_full_assembly(
     off_pusher = _trim_offset(u_pusher)
     children.append(ins.translate((0, w_foot_bot + off_pusher, u_pusher)))
 
-    # --- flat-tip pusher setscrew (closed tip at w_bot, hex socket downward) ---
-    raw_pusher = _load_or_procedural("92605A047")
+    # --- flat-tip pusher setscrew (closed tip at w_shelf_bot) ---
+    raw_pusher = _load_or_procedural("92605A044")
     pusher = raw_pusher.rotate(Axis.X, 180.0)
     pusher = pusher.translate((0, -pusher.bounding_box().max.Y, 0))
-    children.append(pusher.translate((0, w_bot, u_pusher)))
+    children.append(pusher.translate((0, w_shelf_bot, u_pusher)))
 
     # --- flat head screws on bolt circle (3 of 6 holes) ---
     raw_screw = _load_or_procedural(params.screw_part)
@@ -1962,6 +2386,22 @@ def build_oap_flexure_full_assembly(
         v = params.bolt_circle_radius_mm * math.sin(angle)
         w = params.bolt_circle_radius_mm * math.cos(angle)
         children.append(fhs.translate((v, w, u_wall_rear)))
+
+    # Roll pusher hardware (inserts in foot bottom + 6mm setscrews)
+    if params.roll_flexure_height_mm > 0:
+        u_roll_actuate = 0.5 * (u_wall_rear + u_plate_front)
+        v_insert = params.roll_insert_spacing_mm
+        w_ped_bot = w_roll_bot + 1.0
+        ins_bottom = raw_insert.rotate(Axis.X, 180.0)
+        ins_bottom = ins_bottom.translate((0, -ins_bottom.bounding_box().min.Y, 0))
+        raw_roll_ss = _load_or_procedural("92605A912")
+        roll_ss = raw_roll_ss.rotate(Axis.X, 180.0)
+        roll_ss = roll_ss.translate((0, -roll_ss.bounding_box().max.Y, 0))
+        for sign in (+1, -1):
+            children.append(ins_bottom.translate((
+                sign * v_insert, w_foot_bot + off_pusher, u_roll_actuate)))
+            children.append(roll_ss.translate((
+                sign * v_insert, w_ped_bot, u_roll_actuate)))
 
     asm = Compound(children=children)
     asm.label = f"assembly_{part_number}_{role}"
@@ -1994,9 +2434,9 @@ def build_mirror_flexure_full_assembly(
     """Round mirror flexure mount + vendor mirror + heat-set inserts + setscrews.
 
     Hardware placed:
-      - 1 top insert + flat-tip setscrew (92605A044) for optic retention
+      - 1 top insert + flat-tip setscrew (92605A043) for optic retention
       - 1 pusher insert (centre, through foot)
-      - 1 flat-tip pusher setscrew (92605A047) at flexure gap
+      - 1 flat-tip pusher setscrew (92605A044) at flexure gap
     """
     from build123d import Axis, Compound
 
@@ -2024,11 +2464,16 @@ def build_mirror_flexure_full_assembly(
 
     insert_flange_r = 0.5 * mfg.insert_flange_dia_mm
     optic_R = 0.5 * diameter_mm
+    u_vertex = 0.0
     u_wall_rear = -thickness_mm - params.rear_wall_mm
-    u_bolt = 0.5 * u_wall_rear
+    boss_width_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"] + params.bolt_safety_mm
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
+    u_setscrew = 0.5 * (u_wall_rear + u_vertex)
     w_top = optic_R + params.head_clearance_mm
     w_bot = -(optic_R + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     v_bolt = params.foot_bolt_spacing_mm
 
     def _trim_offset(u):
@@ -2043,23 +2488,39 @@ def build_mirror_flexure_full_assembly(
     ins_top = raw_insert.translate((0, -raw_insert.bounding_box().max.Y, 0))
 
     # Top insert (setscrew bore, at u_bolt)
-    children.append(ins_top.translate((0, w_top, u_bolt)))
+    children.append(ins_top.translate((0, w_top, u_setscrew)))
 
-    # Top flat-tip setscrew (tip at optic crown = w_top - head_clearance)
-    raw_ss = _load_or_procedural("92605A044")
+    front_bore_dia = diameter_mm + mfg.assembly_clearance_mm + mfg.print_tolerance_mm
+    bore_r = 0.5 * (front_bore_dia + params.optic_clearance_mm)
+    bump_center_r = bore_r + params.contact_radius_mm - params.contact_offset_mm
+    w_bump_top = bump_center_r + params.contact_radius_mm
+
+    raw_ss = _load_or_procedural("92605A043")
     ss_top = raw_ss.rotate(Axis.Z, 90.0)
     ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
-    children.append(ss_top.translate((0, w_top - params.head_clearance_mm, u_bolt)))
+    children.append(ss_top.translate((0, w_bump_top, u_setscrew)))
 
-    # Pusher insert
     off_pusher = _trim_offset(0.0)
     children.append(ins_bottom.translate((0, w_foot_bot + off_pusher, 0.0)))
 
-    # Flat-tip pusher setscrew (closed tip at w_bot, hex socket downward)
-    raw_pusher = _load_or_procedural("92605A047")
+    raw_pusher = _load_or_procedural("92605A044")
     pusher = raw_pusher.rotate(Axis.X, 180.0)
     pusher = pusher.translate((0, -pusher.bounding_box().max.Y, 0))
-    children.append(pusher.translate((0, w_bot, 0.0)))
+    children.append(pusher.translate((0, w_shelf_bot, 0.0)))
+
+    # Roll pusher hardware (inserts in foot bottom + 6mm setscrews)
+    if params.roll_flexure_height_mm > 0:
+        u_roll_actuate = 0.5 * (u_wall_rear + 0.0)
+        v_insert = params.roll_insert_spacing_mm
+        w_ped_bot = w_roll_bot + 1.0
+        raw_roll_ss = _load_or_procedural("92605A912")
+        roll_ss = raw_roll_ss.rotate(Axis.X, 180.0)
+        roll_ss = roll_ss.translate((0, -roll_ss.bounding_box().max.Y, 0))
+        for sign in (+1, -1):
+            children.append(ins_bottom.translate((
+                sign * v_insert, w_foot_bot + off_pusher, u_roll_actuate)))
+            children.append(roll_ss.translate((
+                sign * v_insert, w_ped_bot, u_roll_actuate)))
 
     asm = Compound(children=children)
     asm.label = f"assembly_{part_number}"
@@ -2090,9 +2551,9 @@ def build_grating_flexure_full_assembly(
     """Grating flexure mount + vendor grating + heat-set inserts + setscrews.
 
     Hardware placed:
-      - 1 top insert + flat-tip setscrew (92605A044) for optic retention
+      - 1 top insert + flat-tip setscrew (92605A043) for optic retention
       - 1 pusher insert (centre, through foot)
-      - 1 flat-tip pusher setscrew (92605A047) at flexure gap
+      - 1 flat-tip pusher setscrew (92605A044) at flexure gap
     """
     from build123d import Axis, Compound
 
@@ -2121,11 +2582,14 @@ def build_grating_flexure_full_assembly(
     insert_flange_r = 0.5 * mfg.insert_flange_dia_mm
     half_size = 0.5 * size_mm
     u_wall_rear = -(thickness_mm + params.rear_wall_mm)
-    u_bolt = 0.5 * u_wall_rear
+    boss_width_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"] + params.bolt_safety_mm
+    u_bolt = u_wall_rear + 0.5 * boss_width_mm
     u_setscrew = -0.5 * thickness_mm
     w_top = half_size + params.head_clearance_mm
     w_bot = -(half_size + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     v_bolt = params.foot_bolt_spacing_mm
 
     def _trim_offset(u):
@@ -2142,21 +2606,35 @@ def build_grating_flexure_full_assembly(
     # Top insert (at u_setscrew, centred on grating)
     children.append(ins_top.translate((0, w_top, u_setscrew)))
 
-    # Top flat-tip setscrew (tip at grating edge = w_top - head_clearance)
-    raw_ss = _load_or_procedural("92605A044")
+    w_opening_upper = half_size + 0.5 * (mfg.assembly_clearance_mm + mfg.print_tolerance_mm + params.optic_clearance_mm)
+    bump_center_w = w_opening_upper + params.contact_radius_mm - params.contact_offset_mm
+    w_bump_top = bump_center_w + params.contact_radius_mm
+
+    raw_ss = _load_or_procedural("92605A043")
     ss_top = raw_ss.rotate(Axis.Z, 90.0)
     ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
-    children.append(ss_top.translate((0, w_top - params.head_clearance_mm, u_setscrew)))
+    children.append(ss_top.translate((0, w_bump_top, u_setscrew)))
 
-    # Pusher insert
     off_pusher = _trim_offset(0.0)
     children.append(ins_bottom.translate((0, w_foot_bot + off_pusher, 0.0)))
-
-    # Flat-tip pusher setscrew (closed tip at w_bot, hex socket downward)
-    raw_pusher = _load_or_procedural("92605A047")
+    raw_pusher = _load_or_procedural("92605A044")
     pusher = raw_pusher.rotate(Axis.X, 180.0)
     pusher = pusher.translate((0, -pusher.bounding_box().max.Y, 0))
-    children.append(pusher.translate((0, w_bot, 0.0)))
+    children.append(pusher.translate((0, w_shelf_bot, 0.0)))
+
+    # Roll pusher hardware (inserts in foot bottom + 6mm setscrews)
+    if params.roll_flexure_height_mm > 0:
+        u_roll_actuate = 0.5 * (u_wall_rear + 0.0)
+        v_insert = params.roll_insert_spacing_mm
+        w_ped_bot = w_roll_bot + 1.0
+        raw_roll_ss = _load_or_procedural("92605A912")
+        roll_ss = raw_roll_ss.rotate(Axis.X, 180.0)
+        roll_ss = roll_ss.translate((0, -roll_ss.bounding_box().max.Y, 0))
+        for sign in (+1, -1):
+            children.append(ins_bottom.translate((
+                sign * v_insert, w_foot_bot + off_pusher, u_roll_actuate)))
+            children.append(roll_ss.translate((
+                sign * v_insert, w_ped_bot, u_roll_actuate)))
 
     asm = Compound(children=children)
     asm.label = f"assembly_{part_number}"
@@ -2195,9 +2673,14 @@ def _grating_flexure_params_from_bom(mount_dict: dict) -> GratingFlexureMountPar
         foot_bolt_spacing_mm=float(mount_dict["foot_bolt_spacing_mm"]),
         bolt_safety_mm=float(mount_dict["bolt_safety_mm"]),
         front_bolt_offset_mm=float(mount_dict["front_bolt_offset_mm"]),
-        flexure_thickness_mm=float(mount_dict["flexure_thickness_mm"]),
-        flexure_gap_mm=float(mount_dict["flexure_gap_mm"]),
+        pitch_flexure_thickness_mm=float(mount_dict["pitch_flexure_thickness_mm"]),
+        pitch_flexure_gap_mm=float(mount_dict["pitch_flexure_gap_mm"]),
         trim_angle_deg=float(mount_dict["trim_angle_deg"]),
+        roll_flexure_height_mm=float(mount_dict["roll_flexure_height_mm"]),
+        roll_blade_thickness_mm=float(mount_dict["roll_blade_thickness_mm"]),
+        roll_insert_spacing_mm=float(mount_dict["roll_insert_spacing_mm"]),
+        roll_blade_spacing_mm=float(mount_dict["roll_blade_spacing_mm"]),
+        roll_pedestal_gap_mm=float(mount_dict["roll_pedestal_gap_mm"]),
     )
 
 
@@ -2227,9 +2710,17 @@ def build_grating_flexure_assembly(
     part_number: str,
     params: GratingFlexureMountParams | None = None,
 ):
-    """Return a Compound of grating flexure mount + vendor grating STEP."""
-    from build123d import Compound
+    """Grating flexure mount + vendor grating + heat-set inserts + setscrews.
 
+    Hardware placed:
+      - 1 top insert + flat-tip setscrew (92605A043) for optic retention
+      - 1 pusher insert (centre, through foot)
+      - 1 flat-tip pusher setscrew (92605A044) at flexure gap
+      - 2 roll inserts + 2 roll setscrews (92605A912) when roll flexure active
+    """
+    from build123d import Axis, Compound
+
+    mfg = _load_manufacturing()
     size_mm, thickness_mm, mount_dict = _lookup_grating_in_bom(part_number)
     if params is None:
         params = _grating_flexure_params_from_bom(mount_dict)
@@ -2242,7 +2733,61 @@ def build_grating_flexure_assembly(
     grating.label = part_number
     grating.color = _GRATING_COLOR
     mount.color = _MOUNT_COLOR
-    asm = Compound(children=[mount, grating])
+    children = [mount, grating]
+
+    insert_flange_r = 0.5 * mfg.insert_flange_dia_mm
+    half_size = 0.5 * size_mm
+    u_vertex = 0.0
+    u_wall_rear = -(thickness_mm + params.rear_wall_mm)
+    u_setscrew = -0.5 * thickness_mm
+    w_top = half_size + params.head_clearance_mm
+    w_bot = -(half_size + params.foot_clearance_mm)
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
+
+    def _trim_offset(u):
+        return (u + insert_flange_r - u_wall_rear) * math.tan(
+            math.radians(params.trim_angle_deg))
+
+    raw_insert = _load_or_procedural("94459A110")
+    ins_bottom = raw_insert.rotate(Axis.X, 180.0)
+    ins_bottom = ins_bottom.translate((0, -ins_bottom.bounding_box().min.Y, 0))
+    ins_top = raw_insert.translate((0, -raw_insert.bounding_box().max.Y, 0))
+
+    children.append(ins_top.translate((0, w_top, u_setscrew)))
+
+    w_opening_upper = half_size + 0.5 * (mfg.assembly_clearance_mm + mfg.print_tolerance_mm + params.optic_clearance_mm)
+    bump_center_w = w_opening_upper + params.contact_radius_mm - params.contact_offset_mm
+    w_bump_top = bump_center_w + params.contact_radius_mm
+
+    raw_ss = _load_or_procedural("92605A043")
+    ss_top = raw_ss.rotate(Axis.Z, 90.0)
+    ss_top = ss_top.translate((0, -ss_top.bounding_box().min.Y, 0))
+    children.append(ss_top.translate((0, w_bump_top, u_setscrew)))
+
+    off_pusher = _trim_offset(0.0)
+    children.append(ins_bottom.translate((0, w_foot_bot + off_pusher, 0.0)))
+
+    raw_pusher = _load_or_procedural("92605A044")
+    pusher = raw_pusher.rotate(Axis.X, 180.0)
+    pusher = pusher.translate((0, -pusher.bounding_box().max.Y, 0))
+    children.append(pusher.translate((0, w_shelf_bot, 0.0)))
+
+    if params.roll_flexure_height_mm > 0:
+        u_roll_actuate = 0.5 * (u_wall_rear + 0.0)
+        v_insert = params.roll_insert_spacing_mm
+        w_ped_bot = w_roll_bot + 1.0
+        raw_roll_ss = _load_or_procedural("92605A912")
+        roll_ss = raw_roll_ss.rotate(Axis.X, 180.0)
+        roll_ss = roll_ss.translate((0, -roll_ss.bounding_box().max.Y, 0))
+        for sign in (+1, -1):
+            children.append(ins_bottom.translate((
+                sign * v_insert, w_foot_bot + off_pusher, u_roll_actuate)))
+            children.append(roll_ss.translate((
+                sign * v_insert, w_ped_bot, u_roll_actuate)))
+
+    asm = Compound(children=children)
     asm.label = f"assembly_{part_number}"
     return asm
 
@@ -2266,6 +2811,9 @@ _FIXTURE_COLOR = Color(0.75, 0.15, 0.15)
 
 
 _DEBOSS_DEPTH_MM = 0.5
+
+
+
 
 def build_mirror_assembly_fixture(
     part_number: str,
@@ -2298,14 +2846,16 @@ def build_mirror_assembly_fixture(
     u_wall_rear = u_shoulder - params.rear_wall_mm
     bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
-                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    foot_length_mm = params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_foot_front = u_vertex + foot_length_mm
     w_top = optic_radius_mm + params.head_clearance_mm
     w_bot = -(optic_radius_mm + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     v_half_mm = optic_radius_mm + params.wall_margin_mm
     slab_total_u_mm = u_foot_front - u_wall_rear
+    slab_depth_mm = u_vertex - u_wall_rear
     slab_depth_mm = u_vertex - u_wall_rear
     full_height_mm = w_top - w_foot_bot
     w_center = 0.5 * (w_top + w_foot_bot)
@@ -2350,37 +2900,57 @@ def build_mirror_assembly_fixture(
                         slab_total_u_mm, mode=Mode.SUBTRACT)
         front_face = hull.faces().sort_by(Axis.Z)[-1]
         mill_depth_mm = u_foot_front - u_vertex
-        w_slab_center = 0.5 * (w_top + w_bot)
+        w_slab_center = 0.5 * (w_top + w_shelf_bot)
         with BuildSketch(front_face):
             with Locations(Pos(0, w_slab_center - w_center)):
-                Rectangle(2 * v_half_mm + 2 * t, w_top - w_bot + 2 * t)
+                Rectangle(2 * v_half_mm + 2 * t, w_top - w_shelf_bot + 2 * t)
         extrude(amount=-mill_depth_mm, mode=Mode.SUBTRACT)
+        tongue_width_mm = 2 * params.foot_bolt_spacing_mm + boss_width_mm
         foot_face = hull.faces().filter_by(Axis.Y).sort_by(Axis.Y)[0]
         foot_u_mid = foot_face.center().Z
         with BuildSketch(foot_face):
             with Locations(Pos(0, 0.5 * (u_wall_rear + u_vertex) - foot_u_mid)):
                 Rectangle(2 * v_half_mm + 2 * t, slab_depth_mm)
-            tongue_u_len = u_front_bolt - u_wall_rear
-            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt) - foot_u_mid)):
-                Rectangle(boss_width_mm + 2 * t, tongue_u_len)
-            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
-                Circle(0.5 * boss_width_mm + t)
-            tongue_verts = [
+            tongue_u_len = u_front_bolt + 0.5 * boss_width_mm - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt
+                               + 0.5 * boss_width_mm) - foot_u_mid)):
+                Rectangle(tongue_width_mm + 2 * t, tongue_u_len)
+            fillet_verts = [
                 v for v in hull.vertices()
-                if abs(v.Y - (u_vertex - foot_u_mid)) < 0.2
-                and abs(abs(v.X) - (0.5 * boss_width_mm + t)) < 0.2
+                if (abs(v.Y - (u_vertex - foot_u_mid)) < 0.2
+                    and abs(abs(v.X) - 0.5 * (tongue_width_mm + 2 * t)) < 0.2)
+                or (abs(v.Y - (u_front_bolt + 0.5 * boss_width_mm
+                               - foot_u_mid)) < 0.2
+                    and abs(abs(v.X) - 0.5 * (tongue_width_mm + 2 * t)) < 0.2)
             ]
-            if tongue_verts:
-                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+            if fillet_verts:
+                try:
+                    fillet2d(fillet_verts, radius=mfg.fillet_radius_mm)
+                except Exception:
+                    pass
         extrude(amount=-(w_top - w_foot_bot + 2 * t), mode=Mode.INTERSECT)
 
-    _shelf_plane = Plane(origin=(0, w_bot - t, 0),
+    # Pitch pusher shelf hull
+    _shelf_plane = Plane(origin=(0, w_shelf_bot - t, 0),
                          x_dir=(1, 0, 0), z_dir=(0, 1, 0))
     with BuildPart() as _shelf_bp:
         with BuildSketch(_shelf_plane):
             Circle(0.5 * boss_width_mm + t)
         extrude(amount=params.pusher_shelf_mm + 2 * t)
     mount_hull = hull.part.fuse(_shelf_bp.part)
+
+    # Roll flexure band hull (slab depth, no overhang)
+    if params.roll_flexure_height_mm > 0:
+        w_roll_mid = 0.5 * (w_roll_bot + w_bot)
+        _roll_plane = Plane(origin=(0, 0, u_wall_rear),
+                            x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+        with BuildPart() as _roll_hull_bp:
+            with BuildSketch(_roll_plane):
+                with Locations(Pos(0, w_roll_mid)):
+                    Rectangle(2 * optic_radius_mm + 2 * t,
+                              params.roll_flexure_height_mm + 2 * t)
+            extrude(amount=slab_depth_mm)
+        mount_hull = mount_hull.fuse(_roll_hull_bp.part)
 
     # 3. Mirror (inflated by t in v and w only)
     mt, co = _lookup_mirror_shape(part_number)
@@ -2395,20 +2965,19 @@ def build_mirror_assembly_fixture(
     _fr = mfg.fillet_radius_mm
     with BuildPart() as fix_final:
         fix_final._obj = fixture
-        # Through-cut from the optic plane down so the foot can't bottom out.
-        # Widened and deepened by fillet_radius to clear the tongue-slab fillet.
+        # Through-cut from pitch shelf down so the foot can't bottom out.
         with Locations(Pos(0,
-                           0.5 * (w_foot_bot + w_bot),
+                           0.5 * (w_foot_bot + w_shelf_bot),
                            0.5 * (u_vertex - _fr + z_hi))):
-            Box(boss_width_mm + 2 * t + 2 * _fr,
-                w_bot - w_foot_bot + 2 * t,
+            Box(tongue_width_mm + 2 * t + 2 * _fr,
+                w_shelf_bot - w_foot_bot + 2 * t,
                 z_hi - u_vertex + _fr + 2 * t,
                 mode=Mode.SUBTRACT)
-        # Through-cut for the pusher shelf pocket.
+        # Through-cut for the pitch pusher shelf pocket.
         with Locations(Pos(0,
-                           w_bot + 0.5 * params.pusher_shelf_mm,
+                           w_shelf_bot + 0.5 * params.pusher_shelf_mm,
                            0.5 * (u_vertex - _fr + z_hi))):
-            Box(boss_width_mm + 2 * t + 2 * _fr,
+            Box(tongue_width_mm + 2 * t + 2 * _fr,
                 params.pusher_shelf_mm + 4 * t,
                 z_hi - u_vertex + _fr + 2 * t,
                 mode=Mode.SUBTRACT)
@@ -2482,12 +3051,13 @@ def build_grating_assembly_fixture(
     slab_depth_mm = u_vertex - u_wall_rear
     w_top = half_size_mm + params.head_clearance_mm
     w_bot = -(half_size_mm + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
     v_half_mm = half_size_mm
     bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
-                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    foot_length_mm = params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_foot_front = u_vertex + foot_length_mm
     slab_total_u_mm = u_foot_front - u_wall_rear
     full_height_mm = w_top - w_foot_bot
@@ -2529,38 +3099,58 @@ def build_grating_assembly_fixture(
 
         front_face = hull.faces().sort_by(Axis.Z)[-1]
         mill_depth_mm = u_foot_front - u_vertex
-        w_slab_center = 0.5 * (w_top + w_bot)
+        w_slab_center = 0.5 * (w_top + w_shelf_bot)
         with BuildSketch(front_face):
             with Locations(Pos(0, w_slab_center - w_center)):
-                Rectangle(2 * v_half_mm + 2 * t, w_top - w_bot + 2 * t)
+                Rectangle(2 * v_half_mm + 2 * t, w_top - w_shelf_bot + 2 * t)
         extrude(amount=-mill_depth_mm, mode=Mode.SUBTRACT)
 
+        tongue_width_mm = 2 * params.foot_bolt_spacing_mm + boss_width_mm
         foot_face = hull.faces().filter_by(Axis.Y).sort_by(Axis.Y)[0]
         foot_u_mid = foot_face.center().Z
         with BuildSketch(foot_face):
             with Locations(Pos(0, 0.5 * (u_wall_rear + u_vertex) - foot_u_mid)):
                 Rectangle(2 * v_half_mm + 2 * t, slab_depth_mm)
-            tongue_u_len = u_front_bolt - u_wall_rear
-            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt) - foot_u_mid)):
-                Rectangle(boss_width_mm + 2 * t, tongue_u_len)
-            with Locations(Pos(0, u_front_bolt - foot_u_mid)):
-                Circle(0.5 * boss_width_mm + t)
-            tongue_verts = [
+            tongue_u_len = u_front_bolt + 0.5 * boss_width_mm - u_wall_rear
+            with Locations(Pos(0, 0.5 * (u_wall_rear + u_front_bolt
+                               + 0.5 * boss_width_mm) - foot_u_mid)):
+                Rectangle(tongue_width_mm + 2 * t, tongue_u_len)
+            fillet_verts = [
                 v for v in hull.vertices()
-                if abs(v.Y - (u_vertex - foot_u_mid)) < 0.2
-                and abs(abs(v.X) - (0.5 * boss_width_mm + t)) < 0.2
+                if (abs(v.Y - (u_vertex - foot_u_mid)) < 0.2
+                    and abs(abs(v.X) - 0.5 * (tongue_width_mm + 2 * t)) < 0.2)
+                or (abs(v.Y - (u_front_bolt + 0.5 * boss_width_mm
+                               - foot_u_mid)) < 0.2
+                    and abs(abs(v.X) - 0.5 * (tongue_width_mm + 2 * t)) < 0.2)
             ]
-            if tongue_verts:
-                fillet2d(tongue_verts, radius=mfg.fillet_radius_mm)
+            if fillet_verts:
+                try:
+                    fillet2d(fillet_verts, radius=mfg.fillet_radius_mm)
+                except Exception:
+                    pass
         extrude(amount=-(w_top - w_foot_bot + 2 * t), mode=Mode.INTERSECT)
 
-    _shelf_plane = Plane(origin=(0, w_bot - t, 0),
+    # Pitch pusher shelf hull
+    _shelf_plane = Plane(origin=(0, w_shelf_bot - t, 0),
                          x_dir=(1, 0, 0), z_dir=(0, 1, 0))
     with BuildPart() as _shelf_bp:
         with BuildSketch(_shelf_plane):
             Circle(0.5 * boss_width_mm + t)
         extrude(amount=params.pusher_shelf_mm + 2 * t)
     mount_hull = hull.part.fuse(_shelf_bp.part)
+
+    # Roll flexure band hull
+    if params.roll_flexure_height_mm > 0:
+        w_roll_mid = 0.5 * (w_roll_bot + w_bot)
+        _roll_plane = Plane(origin=(0, 0, u_wall_rear),
+                            x_dir=(1, 0, 0), z_dir=(0, 0, 1))
+        with BuildPart() as _roll_hull_bp:
+            with BuildSketch(_roll_plane):
+                with Locations(Pos(0, w_roll_mid)):
+                    Rectangle(2 * half_size_mm + 2 * t,
+                              params.roll_flexure_height_mm + 2 * t)
+            extrude(amount=slab_depth_mm)
+        mount_hull = mount_hull.fuse(_roll_hull_bp.part)
 
     # 3. Grating solid (inflated by t in v and w only)
     grating = _build_generic_grating(size_mm + 2 * t, thickness_mm)
@@ -2573,16 +3163,16 @@ def build_grating_assembly_fixture(
     with BuildPart() as fix_final:
         fix_final._obj = fixture
         with Locations(Pos(0,
-                           0.5 * (w_foot_bot + w_bot),
+                           0.5 * (w_foot_bot + w_shelf_bot),
                            0.5 * (u_vertex - _fr + z_hi))):
-            Box(boss_width_mm + 2 * t + 2 * _fr,
-                w_bot - w_foot_bot + 2 * t,
+            Box(tongue_width_mm + 2 * t + 2 * _fr,
+                w_shelf_bot - w_foot_bot + 2 * t,
                 z_hi - u_vertex + _fr + 2 * t,
                 mode=Mode.SUBTRACT)
         with Locations(Pos(0,
-                           w_bot + 0.5 * params.pusher_shelf_mm,
+                           w_shelf_bot + 0.5 * params.pusher_shelf_mm,
                            0.5 * (u_vertex - _fr + z_hi))):
-            Box(boss_width_mm + 2 * t + 2 * _fr,
+            Box(tongue_width_mm + 2 * t + 2 * _fr,
                 params.pusher_shelf_mm + 4 * t,
                 z_hi - u_vertex + _fr + 2 * t,
                 mode=Mode.SUBTRACT)
@@ -2671,7 +3261,7 @@ def build_hasma_tap_fixture(
 
     # Tap clearance bore: 1/4" = 6.35mm + print/assembly tolerance
     tap_bore_r = 0.5 * 6.35 + mfg.print_tolerance_mm + mfg.assembly_clearance_mm
-    cone_length = max(cone_length, 25.4)
+    cone_length = max(cone_length, 20.0)
 
     with BuildPart() as fix:
         with BuildSketch(Plane.XY):
@@ -3002,6 +3592,46 @@ def build_laser_alignment_holder(
 
     result = bp.part
     result.label = "laser_alignment_holder"
+    result.color = _MOUNT_COLOR
+    return result
+
+
+def build_cfl_shade(
+    *,
+    inner_dia_mm: float = 65.0,
+    height_mm: float = 135.0,
+    wall_mm: float = 5.0,
+    cap_mm: float = 5.0,
+    tap_drill_dia_mm: float = 5.5,
+) -> Part:
+    """CFL lamp shade with HASMA bore for fiber coupling.
+
+    Open cylinder that slips over a lamp fixture base, closed on the
+    opposite end with a 1/4"-36 tappable pilot bore at the centre.
+
+    Frame: Z-axis along cylinder axis.  Open end at Z=0, closed cap at
+    Z = height_mm + cap_mm.
+    """
+    inner_r = 0.5 * inner_dia_mm
+    outer_r = inner_r + wall_mm
+    total_h = height_mm + cap_mm
+
+    with BuildPart() as bp:
+        Cylinder(
+            radius=outer_r, height=total_h,
+            align=(Align.CENTER, Align.CENTER, Align.MIN),
+        )
+        with BuildSketch(Plane.XY):
+            Circle(inner_r)
+        extrude(amount=height_mm, mode=Mode.SUBTRACT)
+
+        cap_top = Plane.XY.offset(total_h)
+        with BuildSketch(cap_top):
+            Circle(0.5 * tap_drill_dia_mm)
+        extrude(amount=-cap_mm, mode=Mode.SUBTRACT)
+
+    result = bp.part
+    result.label = "cfl_shade"
     result.color = _MOUNT_COLOR
     return result
 

@@ -124,6 +124,18 @@ python3 scripts/beam_profile.py --run output/optim_<run_dir>
   `"sagittal"` for F1). No implicit defaults.
 - **Procedural CAD**: all solids generated from BOM parameters — no vendor
   STEP files shipped. See `tests/test_procedural_cad.py` for validation.
+- **Mount flexures**: each mount has a pitch flexure (living-hinge web,
+  `pitch_flexure_thickness_mm`) and optionally a roll flexure
+  (2-bladed leaf-spring cross-pivot, `roll_flexure_height_mm > 0`).
+  Roll flexure is active on cylindrical mirrors (F1, M1) and the
+  grating; spherical M2 has `roll_flexure_height_mm = 0`.
+  The w-stacking is: foot → pitch gap → pitch shelf → roll blades →
+  optic pocket. The `Mount` object carries `tongue_half_mm` and
+  `u_front_mm` — the housing reads these rather than re-deriving.
+- **Foot bolt layout**: 2 forward bolts at `±foot_bolt_spacing_mm`,
+  1 aft bolt at `u_wall_rear + 0.5 * boss_width`. Wide tongue spans
+  both forward bolts. `foot_length_mm = front_bolt_offset + 0.5 *
+  boss_width` (no `max()` guard).
 - **Detector orientation**: pin 1 (notch) of the TCD1304 is the
   short-wavelength (blue) end. In the KiCad STEP, pin 1 is at +X;
   `place_in_scene_frame` maps STEP +X to raysect local +x.

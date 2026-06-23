@@ -94,6 +94,8 @@ class Mount:
     slab_polygon_xy: tuple[tuple[float, float], ...] | None = None
     foot_polygon_xy: tuple[tuple[float, float], ...] | None = None
     foot_outline_xy: tuple[tuple[float, float], ...] | None = None
+    tongue_half_mm: float | None = None
+    u_front_mm: float | None = None
 
 
 # ─── 2-D geometry helpers ────────────────────────────────────────────────────

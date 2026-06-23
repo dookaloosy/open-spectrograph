@@ -707,12 +707,16 @@ both structural chassis and light-tight enclosure.  Optic mounts bolt to
 the housing floor via screws; the HASMA fiber adapter threads into the
 entrance wall via a 1/4''-36 tapped hole (tap drill printed, tapped
 post-print with a conical tap guide fixture).  Each mount integrates
-single-axis pitch adjustment via a living-hinge flexure (1.6\,mm web),
-with a setscrew-driven foot trimmed at 2\textdegree{} to preload the
-hinge.  Captive TPU contact bumps provide three-point optic retention;
-the top setscrew preloads the optic against the two bottom bumps.  Two
-mount types cover the optical train: mirror (round) and grating
-(square).  When no vendor STEP file is registered for a given optic, the
+two-axis adjustment: pitch via a living-hinge flexure at the rear wall,
+and roll via a 2-bladed leaf-spring cross-pivot section whose virtual
+pivot coincides with the optic centre.  The pitch hinge foot is trimmed
+at 2\textdegree{} to preload the flexure; the roll flexure is actuated
+by a pair of M2 setscrews through heat-set inserts in the foot, pushing
+against trapezoidal pedestals that anchor the leaf blades.  Captive TPU
+contact bumps provide three-point optic retention; the top setscrew
+preloads the optic against the two bottom bumps.  Three mount types
+cover the optical train: mirror (round), grating (square), and OAP
+(plate with hex bolt pattern).  When no vendor STEP file is registered for a given optic, the
 exporter generates a procedural solid from the BOM's geometry parameters
 (radius of curvature, diameter, thickness) using build123d CSG
 primitives---sphere-cylinder intersections for spherical mirrors,
@@ -1019,7 +1023,7 @@ prototype.}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_4_v0-model.png}
-\caption{CAD model of the v0.4.0 assembly.}
+\caption{CAD model of the v0.5.0 assembly.}
 \label{fig:v0-model}
 \end{figure}
 
@@ -1042,10 +1046,10 @@ Grating & 600\,g/mm, 25$\times$25\,mm, blaze 500\,nm & GR25-0605 & \$137 \\
 M2 & $f = 100$\,mm, $\varnothing\,50.8$\,mm, spherical & CM508-100-G01 & \$138 \\
 Detector board & 3648\,px, 8\,$\mu$m pitch, 16-bit ADC & TCD1304 SPI Rev2EB & \$110 \\
 Controller board & Teensy~4.0, FlexPWM, USB~2.0 HS & Instr.\ Controller & \$90 \\
-Hardware & inserts, setscrews, screws & McMaster-Carr & \$20 \\
+Hardware & inserts, setscrews, screws & McMaster-Carr & \$12 \\
 Housing & 3D printed black plastic & 5 parts + 4 mounts & \$5 \\
 \midrule
-& & \textbf{Total} & \textbf{\$912} \\
+& & \textbf{Total} & \textbf{\$904} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1113,7 +1117,7 @@ across the band.  RMS annotation refers to the primary wavelength only.}
 \toprule
 & \multicolumn{2}{c}{Point source} & \multicolumn{2}{c}{25\,$\mu$m fiber} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
-$\lambda$ (nm) & RMS ($\mu$m) & ILF (nm) & RMS ($\mu$m) & ILF (nm) \\
+$\lambda$ (nm) & RMS ($\mu$m) & ILF EE76 (nm) & RMS ($\mu$m) & ILF EE76 (nm) \\
 \midrule
 400 & 41.1 & 0.68 & 46.8 & 0.74 \\
 550 & 20.1 & 0.36 & 30.9 & 0.51 \\
@@ -1195,6 +1199,13 @@ and exported with:
 \hspace{2em}\texttt{python export.py {-}{-}baseline data/czerny\_baseline\_v0\_design.toml {-}{-}cad}
 \medskip
 
+\noindent All parts were printed using a multimaterial fused deposition
+modelling (FDM) printer with a 0.4\,mm nozzle at 0.24\,mm layer thickness
+with 15\% gyroid infill.  Optic mounts were printed on their backs (foot
+pointing up).  Supports were enabled for the alignment screen, housing, and
+bottom cover; a PLA support interface was used for PETG parts for ease of
+support removal.
+
 \subsubsection{Housing and mounts}
 
 \begin{table}[h!]
@@ -1206,14 +1217,14 @@ and exported with:
 \toprule
 Part & File & Material & Notes \\
 \midrule
-Housing & \texttt{housing.step} & PLA/PETG & Unibody chassis + light-tight enclosure \\
-Top cover & \texttt{top\_cover.step} & PLA/PETG & Snap-fit lid with embossed ray path \\
-Detector cover & \texttt{detector\_cover.step} & PLA/PETG & Shields detector pocket \\
-Bottom cover & \texttt{bottom\_cover.step} & PLA/PETG & Base plate with screw holes \\
-F1 mount & \texttt{f1\_mount.step} & PLA/PETG & Sagittal cylindrical collimator mount \\
-M1 mount & \texttt{m1\_mount.step} & PLA/PETG & Tangential cylindrical collimator mount \\
-M2 mount & \texttt{m2\_mount.step} & PLA/PETG & Spherical focuser mount \\
-Grating mount & \texttt{grating\_mount.step} & PLA/PETG & Ruled grating mount \\
+Housing & \texttt{housing.step} & PETG & Unibody chassis + light-tight enclosure \\
+Top cover & \texttt{top\_cover.step} & PETG & Snap-fit lid with embossed ray path \\
+Detector cover & \texttt{detector\_cover.step} & PETG & Shields detector pocket \\
+Bottom cover & \texttt{bottom\_cover.step} & PETG & Base plate with screw holes \\
+F1 mount & \texttt{f1\_mount.step} & PETG & Sagittal cylindrical collimator mount \\
+M1 mount & \texttt{m1\_mount.step} & PETG & Tangential cylindrical collimator mount \\
+M2 mount & \texttt{m2\_mount.step} & PETG & Spherical focuser mount \\
+Grating mount & \texttt{grating\_mount.step} & PETG & Ruled grating mount \\
 Contact bumps & (in mounts) & TPU & Captive cylinders, three per mount \\
 \bottomrule
 \end{tabular*}
@@ -1235,12 +1246,12 @@ setscrew-preloaded three-point retention.  The HASMA bore prints as a
 \toprule
 Fixture & File & Material & Purpose \\
 \midrule
-M1 fixture & \texttt{m1\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
-M2 fixture & \texttt{m2\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
-F1 fixture & \texttt{f1\_fixture.step} & PLA/PETG & Holds mirror during assembly \\
-Grating fixture & \texttt{grating\_fixture.step} & PLA/PETG & Holds grating during assembly \\
-HASMA tap guide & \texttt{hasma\_tap\_fixture.step} & PLA/PETG & Guides 1/4''-36 tap through bore \\
-Alignment screen & \texttt{alignment\_screen.step} & PLA/PETG & Laser centering target with tongue notch \\
+M1 fixture & \texttt{m1\_fixture.step} & PETG & Holds mirror during assembly \\
+M2 fixture & \texttt{m2\_fixture.step} & PETG & Holds mirror during assembly \\
+F1 fixture & \texttt{f1\_fixture.step} & PETG & Holds mirror during assembly \\
+Grating fixture & \texttt{grating\_fixture.step} & PETG & Holds grating during assembly \\
+HASMA tap guide & \texttt{hasma\_tap\_fixture.step} & PETG & Guides 1/4''-36 tap through bore \\
+Alignment screen & \texttt{alignment\_screen.step} & PETG & Beam centering target \\
 \bottomrule
 \end{tabular*}
 \end{table}
@@ -1248,25 +1259,90 @@ Alignment screen & \texttt{alignment\_screen.step} & PLA/PETG & Laser centering 
 Each fixture envelopes the mount and optic with a 1\,mm contact lip,
 through-cuts beneath the foot tongue and pusher shelf to prevent
 bottoming out, and a setscrew access hole.  The HASMA tap guide is a
-1'' cone matching the housing flare, with a 1/4'' through bore for tap
-alignment.  The laser alignment screen is a three-body multi-color print
-(frame, white disk, black reticle) that straddles the mount foot tongue
-and sits at the optic vertex plane, providing a centering target for
-aligning each optic with a collimated laser before the housing is sealed.
+20\,mm cone matching the housing flare, with a 1/4'' through bore for
+tap alignment.  The laser alignment screen is a three-body multi-color
+print (frame, white disk, black reticle) that straddles the mount foot
+tongue and sits at the optic vertex plane, providing a centering target
+for aligning each optic before the housing is sealed.
+
+\subsection{Assembly procedure}
+
+\subsubsection{Prepare housing}
+Use the HASMA tap fixture to guide a 1/4''-36 tap during the tapping
+process.  Slowly rotate the tap in the bore until the thread is
+completely cut through the housing sidewall.  The tap must be held
+perpendicular to the bore hole during this process; any misalignment
+causes gross tilting and translation of the input beam.  Thread the
+HASMA adapter into the tapped hole until the back surface is flush
+with the inner wall of the housing, and secure in place with the
+locking nut.  When a fiber ferrule is inserted, it should be flush
+with the inner wall of the housing; fine-tune the adapter position
+accordingly to achieve this.
+
+\subsubsection{Prepare mounts}
+Install the heat-set inserts into the optic mounts using a hot iron,
+pushing each insert until it is slightly inset into the plastic; exact
+position does not matter.  Install a 4\,mm set screw into the optic
+retention insert at the top of each mount, 5\,mm set screws for the
+pitch flexure pusher inserts, and 8\,mm set screws for the roll
+flexure pusher inserts.
+
+\subsubsection{Install boards}
+Install the detector board so that the notch on the TCD1304 package
+(pin~1) is on the far (blue) side, away from the grating.  Insert the
+cables on the detector board and thread them through the cable channel
+before securing the board with self-tapping screws.  Then install the
+controller board with the USB connector facing the outside edge; also
+insert the cables before securing with self-tapping screws.
+
+\subsubsection{Mount optics}
+Place each optic into its mount and tighten the retaining set screw to
+secure the optic, paying particular attention to the axial orientations
+of the cylindrical mirrors.  The assembly fixtures can be used to orient
+the mirrors during this process.  The grating should be installed with
+the blaze direction pointing toward the detector; this is usually
+indicated with an arrow on the side of the grating.
+
+\subsubsection{Install optics}
+Install each mounted optic in the housing, taking care to seat each
+mount foot in the locating ridges before securing with self-tapping
+screws.  Shine a bright light source such as a diode laser down the
+input fiber and use the alignment screen to set the pitch flexure of
+each optic in turn; the laser spot should be centred vertically on the
+screen after reflecting from each optical element.
+
+\subsubsection{Align optics}
+With the top lid on, capture a live spectrum of a light source with
+sharp spectral lines such as a compact fluorescent lamp (CFL).  Tune
+the pitch flexures of each optic until maximum intensity is achieved;
+set the roll flexures
+of F1, M1, and the grating until the lines are sharpest.  Once
+satisfied, calibrate the spectrum by mapping known peak wavelengths to
+their detector channel positions; a linear or quadratic fit can be used
+to extract fit coefficients that can be saved in the TCD1304 controller
+memory.
+
+\subsubsection{Finish assembly}
+Secure the top, bottom, and detector covers using self-tapping screws.
+Note that the housing can deform under load, so refrain from excessive
+tightening to avoid spectral shifts.  A spectrum should still be
+acquired after closing up, to validate the assembly and recalibrate if
+desired.
 
 \subsection{Results}
 
-Figure~\ref{fig:cfl-spectrum} shows a compact fluorescent lamp (CFL)
-spectrum captured with the assembled v0.4.0 instrument after
-laser-screen alignment of all four optics.  The mercury emission lines are used to perform a quadratic wavelength
-calibration; a Gaussian fit to the isolated Hg\,404.7\,nm line gives
+Figure~\ref{fig:cfl-spectrum} shows a CFL spectrum captured with the
+assembled v0.5.0 instrument after fine alignment of all four
+optics.  The mercury emission lines are used to perform a quadratic
+wavelength calibration; a Gaussian fit to the isolated Hg\,404.7\,nm
+line gives
 FWHM~$= 0.50$\,nm, exceeding the sub-1\,nm design target.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_6_cfl_spectrum.png}
-\caption{CFL spectrum captured with the v0.4.0 spectrograph.  50\,ms
-exposure, 100-frame average, 25\,$\mu$m SMA-905 fiber input.
+\caption{CFL spectrum captured with the v0.5.0 spectrograph.  50\,ms
+exposure, single frame, 25\,$\mu$m SMA-905 fiber input.
 Inset: Gaussian fit to the Hg\,404.7\,nm line.}
 \label{fig:cfl-spectrum}
 \end{figure}
@@ -1288,8 +1364,8 @@ Spectral coverage & $\geq$300\,nm & 420\,nm & TCD1304 at 14.5\,nm/mm \\
 Throughput & $>$0.5\% & 22--41\% & All losses, $\lambda$-dependent \\
 $f$-number & $\leq f/4$ & $f/3.9$ & M1: 25.4\,mm, $f{=}100$\,mm \\
 RLD & $\leq$17\,nm/mm & 14.5\,nm/mm & 600\,g/mm, $f{=}100$\,mm \\
-BOM cost & $<$\$500 & \$912 & \textbf{Exceeds target by 82\%} \\
-Full assembly size & --- & 157$\times$172$\times$99\,mm & 3D printed housing \\
+BOM cost & $<$\$500 & \$904 & \textbf{Exceeds target by 81\%} \\
+Full assembly size & --- & 153$\times$168$\times$99\,mm & 3D printed housing \\
 \bottomrule
 \end{tabular*}
 \end{table}
@@ -1297,9 +1373,9 @@ Full assembly size & --- & 157$\times$172$\times$99\,mm & 3D printed housing \\
 The v0 design meets the resolution target (ILF $<$ 1\,nm) and the
 spectral coverage target ($\geq$300\,nm) but misses the BOM cost target.
 The primary cost driver is the Thorlabs cylindrical mirrors: M1 and
-F1 are \$201 each, accounting for 44\% of the total BOM.  Nevertheless, every part can be
-ordered from \texttt{thorlabs.com} with next-day shipping, making v0
-the fastest path to a physical prototype.
+F1 are \$201 each, accounting for 44\% of the total BOM.  Nevertheless,
+every part can be ordered from \texttt{thorlabs.com} with next-day
+shipping, making v0 the fastest path to a physical prototype.
 
 \newpage
 \clearpage

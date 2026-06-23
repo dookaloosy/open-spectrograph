@@ -46,15 +46,20 @@ description             = "M2 brass heat-set insert for plastic"
 vendor                  = "McMaster-Carr"
 cost_usd                = 0.1946
 
+[hardware."92605A043"]
+description             = "M2×4 18-8 SS flat-tip set screw"
+vendor                  = "McMaster-Carr"
+cost_usd                = 0.4352
+
 [hardware."92605A044"]
 description             = "M2×5 18-8 SS flat-tip set screw"
 vendor                  = "McMaster-Carr"
 cost_usd                = 0.3868
 
-[hardware."92605A047"]
-description             = "M2×6 18-8 SS flat-tip set screw"
+[hardware."92605A912"]
+description             = "M2×8 18-8 SS flat-tip set screw"
 vendor                  = "McMaster-Carr"
-cost_usd                = 0.408
+cost_usd                = 0.3208
 
 [hardware."99461A915"]
 description             = "M2×6 Phillips rounded head thread-forming screw"
@@ -92,12 +97,17 @@ pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
 foot_bolt_thread        = "M2"
-foot_bolt_spacing_mm    = 8.0
-bolt_safety_mm          = 6.0
-front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 1.60
-flexure_gap_mm          = 1.0
+foot_bolt_spacing_mm    = 5.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 5.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 contact_radius_mm       = 1.5
 contact_offset_mm       = 1.0
 contact_separation_mm   = 12.7
@@ -130,12 +140,17 @@ pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
 foot_bolt_thread        = "M2"
-foot_bolt_spacing_mm    = 20.0
-bolt_safety_mm          = 6.0
-front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 1.60
-flexure_gap_mm          = 1.0
+foot_bolt_spacing_mm    = 10.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 20.0
+roll_blade_spacing_mm    = 18.0
+roll_pedestal_gap_mm      = 1.0
 contact_radius_mm       = 1.5
 contact_offset_mm       = 1.0
 contact_separation_mm   = 25.4
@@ -168,12 +183,17 @@ pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
 foot_bolt_thread        = "M2"
-foot_bolt_spacing_mm    = 8.0
-bolt_safety_mm          = 6.0
-front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 1.60
-flexure_gap_mm          = 1.0
+foot_bolt_spacing_mm    = 5.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 5.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 
 # ── Slit ───────────────────────────────────────────────────────────────────────
 
@@ -306,12 +326,17 @@ pusher_shelf_mm         = 2.0
 rear_wall_mm            = 3.0
 foot_thickness_mm       = 5.0
 foot_bolt_thread        = "M2"
-foot_bolt_spacing_mm    = 8.0
-bolt_safety_mm          = 6.0
-front_bolt_offset_mm    = 8.0
-flexure_thickness_mm    = 1.60
-flexure_gap_mm          = 1.0
+foot_bolt_spacing_mm    = 5.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
 trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 5.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
 contact_radius_mm       = 1.5
 contact_offset_mm       = 1.0
 contact_separation_mm   = 12.7

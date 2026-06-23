@@ -503,7 +503,8 @@ def _do_cad(args, design, genome, parts, scene, has_housing, placed, out_dir,
         _bolt_head = float(_mfg["bolts"]["M2"]["head_dia_mm"])
         _mount0 = _bom["mirrors"]["m1_options"][
             list(_bom["mirrors"]["m1_options"])[0]]["mount"]
-        _tongue_w = _bolt_head + float(_mount0["bolt_safety_mm"])
+        _boss_w = _bolt_head + float(_mount0["bolt_safety_mm"])
+        _tongue_w = 2 * float(_mount0["foot_bolt_spacing_mm"]) + _boss_w
         _fillet_r = float(_mfg["fillet_radius_mm"])
         frame, disk, reticle = build_laser_alignment_screen(
             tongue_notch_width_mm=_tongue_w,

@@ -78,6 +78,7 @@ _BOTTOM_COVER_CBORE_DEPTH_MM = 2.0
 _BOTTOM_COVER_LEDGE_WIDTH_MM = 6.0     # ledge pocket shelf width
 _BOTTOM_COVER_EXTENSION_MM = 13.0      # vertical depth below z_bottom
 _BOTTOM_COVER_MIN_WALL_MM = 5.0        # floor between inner clear pocket and deepest cavity
+_FLARE_CEILING_WALL_MM = 3.0          # wall between top cover ledge and HASMA flare ceiling
 _BOTTOM_COVER_WALL_MM = 3.0            # USB channel wall thickness
 _CONTROLLER_Z_INSET_MM = 3.0           # board placement offset toward z_bottom_ext
 _HOUSING_COLOR = Color(0.45, 0.45, 0.45)
@@ -669,7 +670,7 @@ def build_solid_housing_cad(
 
             _dfz = min(fz for _, fz, _ in spec.mount_floor_hulls)
             flare_z_floor = _dfz
-            flare_z_ceil = z_top - _TOP_COVER_DEPTH_MM - _BOTTOM_COVER_MIN_WALL_MM
+            flare_z_ceil = z_top - _TOP_COVER_DEPTH_MM - _FLARE_CEILING_WALL_MM
             flare_z_height = flare_z_ceil - flare_z_floor
 
             flare_plane = Plane(

@@ -5,6 +5,69 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-06-23
+
+Roll flexure for cylindrical axis alignment, foot bolt layout rework.
+
+### Added
+- 2-bladed leaf-spring roll flexure section on cylindrical mirror mounts
+  (F1, M1), grating mount, and OAP mount.  Virtual pivot at optic
+  centre; trapezoidal pedestals with heat-set insert bores; centre
+  stiffening block between blades.
+- Roll setscrew actuation: pair of M2×8 setscrews through heat-set
+  inserts in the foot, pushing against pedestal lower surface.
+- Hardware in grating flexure assembly (retention setscrew, pitch and
+  roll pusher setscrews, heat-set inserts — matching mirror assemblies).
+- Roll flexure clearance holes in housing floor for roll setscrew access.
+- `tongue_half_mm` and `u_front_mm` fields on `Mount` dataclass;
+  housing reads these instead of re-deriving tongue dimensions.
+- Roll flexure BOM parameters: `roll_flexure_height_mm`,
+  `roll_blade_thickness_mm`, `roll_insert_spacing_mm`,
+  `roll_blade_spacing_mm`, `roll_pedestal_gap_mm`.
+
+### Changed
+- Foot bolt layout flipped: 2 forward bolts at `±foot_bolt_spacing_mm`,
+  1 aft bolt at `u_wall_rear + 0.5 * boss_width`.  Wide tongue spans
+  both forward bolts with radiused front corners.
+- `foot_length_mm` simplified: `front_bolt_offset + 0.5 * boss_width`
+  (removed `max()` guard that was pushing the tongue 3 mm past needed).
+- `bolt_safety_mm` reduced from 6.0 to 2.0 (wide tongue provides
+  adequate material around bolt heads).
+- `front_bolt_offset_mm` reduced from 8.0 to 5.0 for all mounts.
+- Aft foot bolt position changed from slab midpoint to
+  `u_wall_rear + 0.5 * boss_width` (closer to rear wall).
+- Pitch flexure parameters renamed: `flexure_thickness_mm` →
+  `pitch_flexure_thickness_mm`, `flexure_gap_mm` →
+  `pitch_flexure_gap_mm`.
+- Face mill split into two bands when roll flexure is active (optic
+  pocket + pitch shelf region), preserving the roll band at slab depth.
+- Housing `_WALL_THICKNESS_MM` kept at 10.0 (lateral walls only).
+- New `_LID_CLEARANCE_MM = 2.0` decouples lid gap from lateral wall
+  thickness; z_top = tallest mount + lid clearance + cover depth.
+- Housing `controller_cavity_wall_mm` reduced from 5.0 to 3.0.
+- `_BOTTOM_COVER_MIN_WALL_MM` split: new `_FLARE_CEILING_WALL_MM = 3.0`
+  for HASMA flare ceiling (was sharing `_BOTTOM_COVER_MIN_WALL_MM = 5.0`).
+- HASMA tap fixture cone length reduced from 25.4 to 20.0 mm.
+- `tongue_half_mm` and `u_front_mm` on `Mount` default to `None`
+  (was `0.0`), consistent with other optional fields.
+- Setscrew BOM: retention M2×4 (92605A043), pitch pushers M2×5
+  (92605A044), roll pushers M2×8 (92605A912); removed M2×6
+  (92605A047).
+- Paper: added assembly procedure section (4.5), print settings in
+  4.4, updated BOM cost table, ILF EE76 column headers, assembly
+  dimensions, version references to v0.5.0.
+- Mount body color (`_MOUNT_COLOR`) now set on all three mount types
+  via `Part(result.wrapped)` cast.
+- Assembly fixtures updated for wide tongue foot shape, roll flexure
+  band hull, and corrected w-stacking.
+- Housing locating ridges read `tongue_half_mm` from `Mount` object.
+- Alignment screen tongue notch width updated for wide tongue.
+- Raysect CSG mount builders synced with CAD: wide tongue foot,
+  roll flexure band solid block (when `roll_flexure_height_mm > 0`).
+- OAP BOM (`czerny_bom_tl_oap.toml`): switched foot bolts to M2,
+  added `pusher_shelf_mm`, standardised bolt spacing to match
+  regular mirror pattern (5/10 mm for 25/50 mm class).
+
 ## [0.4.0] — 2026-06-20
 
 Flexure stiffening, mount foot locating ridges, laser alignment screen.

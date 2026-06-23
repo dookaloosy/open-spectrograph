@@ -275,11 +275,15 @@ both structural chassis and light-tight enclosure. Optic mounts bolt to
 the housing floor via screws; the HASMA fiber adapter threads into the
 entrance wall via a 1/4"-36 tapped hole (tap drill printed, tapped
 post-print with a conical tap guide fixture). Each mount integrates
-single-axis pitch adjustment via a living-hinge flexure (1.6 mm web),
-with a setscrew-driven foot trimmed at 2° to preload the hinge.
+two-axis adjustment: pitch via a living-hinge flexure at the rear wall,
+and roll via a 2-bladed leaf-spring cross-pivot section (virtual pivot
+at the optic centre) for cylindrical axis alignment. The pitch hinge
+foot is trimmed at 2° to preload the flexure; the roll flexure is
+actuated by a pair of setscrews through heat-set inserts in the foot.
 Captive TPU contact bumps provide three-point optic retention; the top
-setscrew preloads the optic against the two bottom bumps. Two mount
-types cover the optical train: mirror (round) and grating (square).
+setscrew preloads the optic against the two bottom bumps. Three mount
+types cover the optical train: mirror (round), grating (square), and
+OAP (plate with hex bolt pattern).
 When no vendor STEP file is registered for a given optic, the exporter
 generates a procedural solid from the BOM's geometry parameters (radius
 of curvature, diameter, thickness) using build123d CSG primitives —

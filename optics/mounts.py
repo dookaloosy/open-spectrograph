@@ -160,9 +160,15 @@ class RoundMirrorFlexureMountParams:
     bolt_safety_mm: float          # clearance around bolt head to foot edge
     front_bolt_offset_mm: float    # u-offset of front tongue bolt from u_vertex
     # -- flexure --
-    flexure_thickness_mm: float    # thin web dimension in u (layer-height controlled)
-    flexure_gap_mm: float          # relief gap height (blade bending length)
+    pitch_flexure_thickness_mm: float    # thin web dimension in u (layer-height controlled)
+    pitch_flexure_gap_mm: float          # relief gap height (blade bending length)
     trim_angle_deg: float          # foot bottom trim angle for pitch preload
+    # -- roll flexure --
+    roll_flexure_height_mm: float  # w-height of roll-adjust leaf-spring section
+    roll_blade_thickness_mm: float # blade perpendicular thickness (nozzle × wall_lines)
+    roll_insert_spacing_mm: float  # half-spacing of roll insert bores from center
+    roll_blade_spacing_mm: float   # half-spacing of blade anchors from center
+    roll_pedestal_gap_mm: float     # gap between pedestal inner edge and blade anchor
     # -- contact bumps (TPU, captive in bore pockets) --
     contact_radius_mm: float       # bump cylinder radius
     contact_offset_mm: float       # protrusion past bore wall into bore
@@ -195,9 +201,15 @@ class GratingFlexureMountParams:
     bolt_safety_mm: float          # clearance around bolt head to foot edge
     front_bolt_offset_mm: float    # u-offset of front tongue bolt from u_vertex
     # -- flexure --
-    flexure_thickness_mm: float    # thin web dimension in u
-    flexure_gap_mm: float          # relief gap height
+    pitch_flexure_thickness_mm: float    # thin web dimension in u
+    pitch_flexure_gap_mm: float          # relief gap height
     trim_angle_deg: float          # foot bottom trim angle
+    # -- roll flexure --
+    roll_flexure_height_mm: float  # w-height of roll-adjust leaf-spring section
+    roll_blade_thickness_mm: float # blade perpendicular thickness (nozzle × wall_lines)
+    roll_insert_spacing_mm: float  # half-spacing of roll insert bores from center
+    roll_blade_spacing_mm: float   # half-spacing of blade anchors from center
+    roll_pedestal_gap_mm: float    # gap between pedestal inner edge and blade anchor
 
 
 @dataclass(frozen=True)
@@ -227,12 +239,19 @@ class OAPMirrorFlexureMountParams:
     bolt_safety_mm: float          # clearance around bolt head to foot edge
     front_bolt_offset_mm: float    # u-offset of front tongue bolt from u_plate_front
     # -- flexure --
-    flexure_thickness_mm: float    # thin web dimension in u
-    flexure_gap_mm: float          # relief gap height
+    pitch_flexure_thickness_mm: float    # thin web dimension in u
+    pitch_flexure_gap_mm: float          # relief gap height
     trim_angle_deg: float          # foot bottom trim angle
+    # -- roll flexure --
+    roll_flexure_height_mm: float  # w-height of roll-adjust leaf-spring section
+    roll_blade_thickness_mm: float # blade perpendicular thickness (nozzle × wall_lines)
+    roll_insert_spacing_mm: float  # half-spacing of roll insert bores from center
+    roll_blade_spacing_mm: float   # half-spacing of blade anchors from center
+    roll_pedestal_gap_mm: float    # gap between pedestal inner edge and blade anchor
 
 
 # ── Flexure mounts (raysect CSG) ───────────────────────────────────────────
+
 
 
 def build_mirror_flexure_mount(
@@ -242,8 +261,9 @@ def build_mirror_flexure_mount(
     """Flexure mirror mount for spherical/flat mirrors (raysect CSG).
 
     Simplified geometry matching the CAD: tombstone slab with bore,
-    forward foot, flexure gap. No fillets, bolt holes, or extraction
-    channel detail.
+    wide-tongue forward foot, pitch flexure gap, and roll flexure
+    band (solid block when active). No fillets, bolt holes, blade
+    cuts, or extraction channel detail.
     """
     if mfg is None:
         from optics.mounts_cad import _load_manufacturing
@@ -264,7 +284,9 @@ def build_mirror_flexure_mount(
 
     w_top = optic_R + params.head_clearance_mm
     w_bot = -(optic_R + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
 
     v_half_mm = optic_R
 
@@ -273,9 +295,9 @@ def build_mirror_flexure_mount(
 
     eps = 0.001  # CSG overcut to avoid coincident-face artifacts
 
-    # Slab body: bottom rectangle + top arch.
+    # Slab body (includes shelf + roll-flexure section): bottom rectangle + top arch.
     slab_bottom = Box(
-        lower=Point3D(-v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
+        lower=Point3D(-v_half_mm * _MM_TO_M, w_shelf_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
         upper=Point3D(+v_half_mm * _MM_TO_M, 0.0, u_vertex * _MM_TO_M),
     )
     slab_depth = u_vertex - u_wall_rear
@@ -313,36 +335,38 @@ def build_mirror_flexure_mount(
     )
     mount_csg = Subtract(Subtract(slab, front_bore), rear_bore)
 
-    w_foot_top = w_bot - params.flexure_gap_mm
+    w_foot_top = w_shelf_bot - params.pitch_flexure_gap_mm
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    u_front_bolt = u_vertex + params.front_bolt_offset_mm
+    tongue_half = params.foot_bolt_spacing_mm + 0.5 * boss_width_mm
+    u_foot_front = u_vertex + params.front_bolt_offset_mm + 0.5 * boss_width_mm
 
-    # Foot: full width behind u_vertex, narrow tongue forward.
+    # Foot: full width behind u_vertex, wide tongue forward.
     foot_rear = Box(
         lower=Point3D(-v_half_mm * _MM_TO_M, w_foot_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
         upper=Point3D(+v_half_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_vertex * _MM_TO_M),
     )
-    foot_length = Box(
-        lower=Point3D(-0.5 * boss_width_mm * _MM_TO_M, w_foot_bot * _MM_TO_M, u_vertex * _MM_TO_M),
-        upper=Point3D(+0.5 * boss_width_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_front_bolt * _MM_TO_M),
+    foot_tongue = Box(
+        lower=Point3D(-tongue_half * _MM_TO_M, w_foot_bot * _MM_TO_M, u_vertex * _MM_TO_M),
+        upper=Point3D(+tongue_half * _MM_TO_M, w_foot_top * _MM_TO_M, u_foot_front * _MM_TO_M),
     )
-    foot_boss = Cylinder(
-        radius=0.5 * boss_width_mm * _MM_TO_M,
-        height=(w_foot_top - w_foot_bot) * _MM_TO_M,
-        transform=(
-            translate(0.0, w_foot_bot * _MM_TO_M, u_front_bolt * _MM_TO_M)
-            * rotate_basis(forward=_V3((0.0, 1.0, 0.0)), up=_V3((0.0, 0.0, 1.0)))
-        ),
-    )
-    foot = Union(Union(foot_rear, foot_length), foot_boss)
+    foot = Union(foot_rear, foot_tongue)
 
     # Flexure web: thin connection at the back wall.
     flex_web = Box(
         lower=Point3D(-v_half_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_wall_rear * _MM_TO_M),
-        upper=Point3D(+v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, (u_wall_rear + params.flexure_thickness_mm) * _MM_TO_M),
+        upper=Point3D(+v_half_mm * _MM_TO_M, w_shelf_bot * _MM_TO_M, (u_wall_rear + params.pitch_flexure_thickness_mm) * _MM_TO_M),
     )
 
     mount_csg = Union(Union(mount_csg, foot), flex_web)
+
+    # Roll flexure band: solid block (no blade detail in CSG).
+    if params.roll_flexure_height_mm > 0:
+        roll_band = Box(
+            lower=Point3D(-v_half_mm * _MM_TO_M, w_roll_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
+            upper=Point3D(+v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, u_vertex * _MM_TO_M),
+        )
+        mount_csg = Union(mount_csg, roll_band)
+
     mount_csg.material = Lambert(ConstantSF(albedo))
 
     mount_csg.transform = (
@@ -363,9 +387,10 @@ def build_mirror_flexure_mount(
                   min(c[1] for c in corners), max(c[1] for c in corners))
 
     slab_poly = _oriented_rect_xy(element, v_half_mm, u_wall_rear, u_vertex)
-    foot_poly = _foot_hull_xy(element, v_half_mm, 0.5 * boss_width_mm,
+    tongue_half = params.foot_bolt_spacing_mm + 0.5 * boss_width_mm
+    foot_poly = _foot_hull_xy(element, v_half_mm, tongue_half,
                               u_wall_rear, u_vertex, u_foot_front)
-    foot_outline = _foot_outline_xy(element, v_half_mm, 0.5 * boss_width_mm,
+    foot_outline = _foot_outline_xy(element, v_half_mm, tongue_half,
                                     u_wall_rear, u_vertex, u_foot_front)
     return Mount(label=f"{element.label}_mount", csg=mount_csg,
                  bbox_xy_mm=bbox_xy_mm,
@@ -373,7 +398,9 @@ def build_mirror_flexure_mount(
                  z_range_mm=(w_foot_bot, w_top),
                  slab_polygon_xy=slab_poly,
                  foot_polygon_xy=foot_poly,
-                 foot_outline_xy=foot_outline)
+                 foot_outline_xy=foot_outline,
+                 tongue_half_mm=tongue_half,
+                 u_front_mm=u_foot_front)
 
 
 def build_grating_flexure_mount(
@@ -383,7 +410,8 @@ def build_grating_flexure_mount(
     """Flexure grating mount (raysect CSG).
 
     Simplified geometry matching the CAD: rectangular slab with jaw pocket,
-    forward foot, flexure gap.
+    wide-tongue forward foot, pitch flexure gap, and roll flexure band
+    (solid block when active).
     """
     if mfg is None:
         from optics.mounts_cad import _load_manufacturing
@@ -404,16 +432,18 @@ def build_grating_flexure_mount(
 
     w_top = half_size + params.head_clearance_mm
     w_bot = -(half_size + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
 
     v_half_mm = half_size
 
     pocket_depth = grating_thick
     eps = 0.001  # CSG overcut to avoid coincident-face artifacts
 
-    # Slab body: simple rectangle.
+    # Slab body (includes roll-flexure section): simple rectangle.
     slab = Box(
-        lower=Point3D(-v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
+        lower=Point3D(-v_half_mm * _MM_TO_M, w_shelf_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
         upper=Point3D(+v_half_mm * _MM_TO_M, w_top * _MM_TO_M, u_vertex * _MM_TO_M),
     )
 
@@ -424,36 +454,39 @@ def build_grating_flexure_mount(
     )
     mount_csg = Subtract(slab, pocket)
 
-    w_foot_top = w_bot - params.flexure_gap_mm
+    w_foot_top = w_shelf_bot - params.pitch_flexure_gap_mm
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
+    tongue_half = params.foot_bolt_spacing_mm + 0.5 * boss_width_mm
+    u_foot_front = u_vertex + params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_front_bolt = u_vertex + params.front_bolt_offset_mm
 
-    # Foot: full width behind u_vertex, narrow tongue forward.
+    # Foot: full width behind u_vertex, wide tongue forward.
     foot_rear = Box(
         lower=Point3D(-v_half_mm * _MM_TO_M, w_foot_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
         upper=Point3D(+v_half_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_vertex * _MM_TO_M),
     )
-    foot_length = Box(
-        lower=Point3D(-0.5 * boss_width_mm * _MM_TO_M, w_foot_bot * _MM_TO_M, u_vertex * _MM_TO_M),
-        upper=Point3D(+0.5 * boss_width_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_front_bolt * _MM_TO_M),
+    foot_tongue = Box(
+        lower=Point3D(-tongue_half * _MM_TO_M, w_foot_bot * _MM_TO_M, u_vertex * _MM_TO_M),
+        upper=Point3D(+tongue_half * _MM_TO_M, w_foot_top * _MM_TO_M, u_foot_front * _MM_TO_M),
     )
-    foot_boss = Cylinder(
-        radius=0.5 * boss_width_mm * _MM_TO_M,
-        height=(w_foot_top - w_foot_bot) * _MM_TO_M,
-        transform=(
-            translate(0.0, w_foot_bot * _MM_TO_M, u_front_bolt * _MM_TO_M)
-            * rotate_basis(forward=_V3((0.0, 1.0, 0.0)), up=_V3((0.0, 0.0, 1.0)))
-        ),
-    )
-    foot = Union(Union(foot_rear, foot_length), foot_boss)
+    foot = Union(foot_rear, foot_tongue)
 
     # Flexure web: thin connection at the back wall.
     flex_web = Box(
         lower=Point3D(-v_half_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_wall_rear * _MM_TO_M),
-        upper=Point3D(+v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, (u_wall_rear + params.flexure_thickness_mm) * _MM_TO_M),
+        upper=Point3D(+v_half_mm * _MM_TO_M, w_shelf_bot * _MM_TO_M, (u_wall_rear + params.pitch_flexure_thickness_mm) * _MM_TO_M),
     )
 
     mount_csg = Union(Union(mount_csg, foot), flex_web)
+
+    # Roll flexure band: solid block (no blade detail in CSG).
+    if params.roll_flexure_height_mm > 0:
+        roll_band = Box(
+            lower=Point3D(-v_half_mm * _MM_TO_M, w_roll_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
+            upper=Point3D(+v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, u_vertex * _MM_TO_M),
+        )
+        mount_csg = Union(mount_csg, roll_band)
+
     mount_csg.material = Lambert(ConstantSF(albedo))
 
     mount_csg.transform = (
@@ -474,9 +507,10 @@ def build_grating_flexure_mount(
                   min(c[1] for c in corners), max(c[1] for c in corners))
 
     slab_poly = _oriented_rect_xy(element, v_half_mm, u_wall_rear, u_vertex)
-    foot_poly = _foot_hull_xy(element, v_half_mm, 0.5 * boss_width_mm,
+    tongue_half = params.foot_bolt_spacing_mm + 0.5 * boss_width_mm
+    foot_poly = _foot_hull_xy(element, v_half_mm, tongue_half,
                               u_wall_rear, u_vertex, u_foot_front)
-    foot_outline = _foot_outline_xy(element, v_half_mm, 0.5 * boss_width_mm,
+    foot_outline = _foot_outline_xy(element, v_half_mm, tongue_half,
                                     u_wall_rear, u_vertex, u_foot_front)
     return Mount(label=f"{element.label}_mount", csg=mount_csg,
                  bbox_xy_mm=bbox_xy_mm,
@@ -484,7 +518,9 @@ def build_grating_flexure_mount(
                  z_range_mm=(w_foot_bot, w_top),
                  slab_polygon_xy=slab_poly,
                  foot_polygon_xy=foot_poly,
-                 foot_outline_xy=foot_outline)
+                 foot_outline_xy=foot_outline,
+                 tongue_half_mm=tongue_half,
+                 u_front_mm=u_foot_front)
 
 
 def build_oap_flexure_mount(
@@ -493,8 +529,9 @@ def build_oap_flexure_mount(
 ) -> Mount:
     """Flexure OAP mount (raysect CSG).
 
-    Simplified geometry matching the CAD: flat plate with through-holes
-    (not modelled in CSG), forward foot, flexure gap.
+    Simplified geometry matching the CAD: flat plate (through-holes not
+    modelled), wide-tongue forward foot, pitch flexure gap, and roll
+    flexure band (solid block when active).
     """
     if mfg is None:
         from optics.mounts_cad import _load_manufacturing
@@ -509,21 +546,22 @@ def build_oap_flexure_mount(
 
     bolt_head_mm = mfg.bolt_dims[params.foot_bolt_thread]["head_dia_mm"]
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
-    foot_length_mm = max(bolt_head_mm + 2 * params.bolt_safety_mm,
-                         params.front_bolt_offset_mm + 0.5 * boss_width_mm)
+    foot_length_mm = params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_foot_front = u_plate_front + foot_length_mm
 
     w_top = optic_R + params.head_clearance_mm
     w_bot = -(optic_R + params.foot_clearance_mm)
-    w_foot_bot = w_bot - params.flexure_gap_mm - params.foot_thickness_mm
+    w_roll_bot = w_bot - params.roll_flexure_height_mm
+    w_shelf_bot = w_roll_bot - params.pusher_shelf_mm
+    w_foot_bot = w_shelf_bot - params.pitch_flexure_gap_mm - params.foot_thickness_mm
 
     v_half_mm = optic_R
 
     eps = 0.001  # CSG overcut to avoid coincident-face artifacts
 
-    # Slab body: bottom rectangle + top semicircle.
+    # Slab body (includes roll-flexure section): bottom rectangle + top semicircle.
     slab_bottom = Box(
-        lower=Point3D(-v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
+        lower=Point3D(-v_half_mm * _MM_TO_M, w_shelf_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
         upper=Point3D(+v_half_mm * _MM_TO_M, 0.0, u_plate_front * _MM_TO_M),
     )
     slab_circle = Cylinder(
@@ -538,36 +576,38 @@ def build_oap_flexure_mount(
     slab_top = Intersect(slab_circle, slab_clip)
     mount_csg = Union(slab_bottom, slab_top)
 
-    w_foot_top = w_bot - params.flexure_gap_mm
+    w_foot_top = w_shelf_bot - params.pitch_flexure_gap_mm
     boss_width_mm = bolt_head_mm + params.bolt_safety_mm
+    tongue_half = params.foot_bolt_spacing_mm + 0.5 * boss_width_mm
+    u_foot_front = u_plate_front + params.front_bolt_offset_mm + 0.5 * boss_width_mm
     u_front_bolt = u_plate_front + params.front_bolt_offset_mm
 
-    # Foot: full width behind u_plate_front, narrow tongue forward.
+    # Foot: full width behind u_plate_front, wide tongue forward.
     foot_rear = Box(
         lower=Point3D(-v_half_mm * _MM_TO_M, w_foot_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
         upper=Point3D(+v_half_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_plate_front * _MM_TO_M),
     )
-    foot_length = Box(
-        lower=Point3D(-0.5 * boss_width_mm * _MM_TO_M, w_foot_bot * _MM_TO_M, u_plate_front * _MM_TO_M),
-        upper=Point3D(+0.5 * boss_width_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_front_bolt * _MM_TO_M),
+    foot_tongue = Box(
+        lower=Point3D(-tongue_half * _MM_TO_M, w_foot_bot * _MM_TO_M, u_plate_front * _MM_TO_M),
+        upper=Point3D(+tongue_half * _MM_TO_M, w_foot_top * _MM_TO_M, u_foot_front * _MM_TO_M),
     )
-    foot_boss = Cylinder(
-        radius=0.5 * boss_width_mm * _MM_TO_M,
-        height=(w_foot_top - w_foot_bot) * _MM_TO_M,
-        transform=(
-            translate(0.0, w_foot_bot * _MM_TO_M, u_front_bolt * _MM_TO_M)
-            * rotate_basis(forward=_V3((0.0, 1.0, 0.0)), up=_V3((0.0, 0.0, 1.0)))
-        ),
-    )
-    foot = Union(Union(foot_rear, foot_length), foot_boss)
+    foot = Union(foot_rear, foot_tongue)
 
     # Flexure web: thin connection at the back wall.
     flex_web = Box(
         lower=Point3D(-v_half_mm * _MM_TO_M, w_foot_top * _MM_TO_M, u_wall_rear * _MM_TO_M),
-        upper=Point3D(+v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, (u_wall_rear + params.flexure_thickness_mm) * _MM_TO_M),
+        upper=Point3D(+v_half_mm * _MM_TO_M, w_shelf_bot * _MM_TO_M, (u_wall_rear + params.pitch_flexure_thickness_mm) * _MM_TO_M),
     )
 
     mount_csg = Union(Union(mount_csg, foot), flex_web)
+
+    # Roll flexure band: solid block (no blade detail in CSG).
+    if params.roll_flexure_height_mm > 0:
+        roll_band = Box(
+            lower=Point3D(-v_half_mm * _MM_TO_M, w_roll_bot * _MM_TO_M, u_wall_rear * _MM_TO_M),
+            upper=Point3D(+v_half_mm * _MM_TO_M, w_bot * _MM_TO_M, u_plate_front * _MM_TO_M),
+        )
+        mount_csg = Union(mount_csg, roll_band)
     mount_csg.material = Lambert(ConstantSF(albedo))
 
     mount_csg.transform = (
@@ -588,9 +628,10 @@ def build_oap_flexure_mount(
                   min(c[1] for c in corners), max(c[1] for c in corners))
 
     slab_poly = _oriented_rect_xy(element, v_half_mm, u_wall_rear, u_plate_front)
-    foot_poly = _foot_hull_xy(element, v_half_mm, 0.5 * boss_width_mm,
+    tongue_half = params.foot_bolt_spacing_mm + 0.5 * boss_width_mm
+    foot_poly = _foot_hull_xy(element, v_half_mm, tongue_half,
                               u_wall_rear, u_plate_front, u_foot_front)
-    foot_outline = _foot_outline_xy(element, v_half_mm, 0.5 * boss_width_mm,
+    foot_outline = _foot_outline_xy(element, v_half_mm, tongue_half,
                                     u_wall_rear, u_plate_front, u_foot_front)
     return Mount(label=f"{element.label}_mount", csg=mount_csg,
                  bbox_xy_mm=bbox_xy_mm,
@@ -598,7 +639,9 @@ def build_oap_flexure_mount(
                  z_range_mm=(w_foot_bot, w_top),
                  slab_polygon_xy=slab_poly,
                  foot_polygon_xy=foot_poly,
-                 foot_outline_xy=foot_outline)
+                 foot_outline_xy=foot_outline,
+                 tongue_half_mm=tongue_half,
+                 u_front_mm=u_foot_front)
 
 
 # ── Detector bbox (for feasibility checking) ──────────────────────────────

@@ -27,10 +27,11 @@ from build123d import import_step
 from optics.mounts_cad import (
     _FLAT_HEAD_SCREW_CATALOG,
     _procedural_flat_head_screw,
-    _procedural_flat_tip_set_screw,
+    _procedural_pitch_set_screw,
     _procedural_hasma,
     _procedural_heat_set_insert,
-    _procedural_short_flat_tip_set_screw,
+    _procedural_retention_set_screw,
+    _procedural_roll_set_screw,
 )
 
 # Commit before vendor STEPs were removed.
@@ -40,8 +41,9 @@ _VENDOR_STEP_PARENT = "1ab5764~1"
 _VENDOR_PATHS = {
     "HASMA":     "data/step/HASMA.step",
     "94459A110": "data/step/94459A110_Heat-Set Inserts for Plastic.STEP",
-    "92605A047": "data/step/92605A047_Stainless Steel Flat-Tip Set Screw.STEP",
     "92605A044": "data/step/92605A044_Stainless Steel Flat-Tip Set Screw.STEP",
+    "92605A043": "data/step/92605A043_Stainless Steel Flat-Tip Set Screw.STEP",
+    "92605A912": "data/step/92605A912_Stainless Steel Flat-Tip Set Screw.STEP",
     "91771A108": "data/step/91771A108_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
     "91771A109": "data/step/91771A109_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
     "91771A194": "data/step/91771A194_Passivated 18-8 Stainless Steel Phillips Flat Head Screw.STEP",
@@ -55,8 +57,9 @@ _VENDOR_PATHS = {
 _VOL_TOL = {
     "HASMA":     0.15,   # 15% (simplified hex, no chamfers/knurling)
     "94459A110": 0.35,   # 35% (knurl valleys + internal bore)
-    "92605A047": 0.60,   # 60% (M2 thread grooves dominate)
     "92605A044": 0.60,   # 60% (M2 thread grooves dominate)
+    "92605A043": 0.60,   # 60% (M2 thread grooves dominate)
+    "92605A912": 0.60,   # 60% (M2 thread grooves dominate)
     "91771A108": 0.30,   # 30% (imperial thread + Phillips recess)
     "91771A109": 0.30,
     "91771A194": 0.25,
@@ -84,8 +87,9 @@ def _recover_vendor_step(part_number: str, tmpdir: Path) -> Path | None:
 _BUILDERS = {
     "HASMA":     _procedural_hasma,
     "94459A110": _procedural_heat_set_insert,
-    "92605A047": _procedural_flat_tip_set_screw,
-    "92605A044": _procedural_short_flat_tip_set_screw,
+    "92605A044": _procedural_pitch_set_screw,
+    "92605A043": _procedural_retention_set_screw,
+    "92605A912": _procedural_roll_set_screw,
 }
 for _pn, _dims in _FLAT_HEAD_SCREW_CATALOG.items():
     _BUILDERS[_pn] = lambda dims=_dims: _procedural_flat_head_screw(**dims)
@@ -94,8 +98,9 @@ for _pn, _dims in _FLAT_HEAD_SCREW_CATALOG.items():
 _REFERENCE = {
     "HASMA":     dict(vol=284.47, area=467.83, bbox=(8.001, 9.160, 9.652)),
     "94459A110": dict(vol=13.13,  area=66.60,  bbox=(2.500, 3.600, 3.600)),
-    "92605A047": dict(vol=11.82,  area=67.67,  bbox=(2.000, 2.000, 6.000)),
     "92605A044": dict(vol=15.01,  area=40.82,  bbox=(2.000, 2.000, 5.000)),
+    "92605A043": dict(vol=11.86,  area=34.53,  bbox=(2.000, 2.000, 4.000)),
+    "92605A912": dict(vol=24.43,  area=59.67,  bbox=(2.000, 2.000, 8.000)),
     "91771A108": dict(vol=53.07,  area=168.38, bbox=(5.385, 5.385, 9.525)),
     "91771A109": dict(vol=60.58,  area=189.78, bbox=(5.385, 5.385, 11.113)),
     "91771A194": dict(vol=159.03, area=342.81, bbox=(7.925, 7.925, 12.700)),
