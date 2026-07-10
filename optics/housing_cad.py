@@ -8,6 +8,7 @@ All positions are in mm (scene frame). z = out-of-plane.
 
 
 import math
+from pathlib import Path
 
 from build123d import (
     Align,
@@ -38,6 +39,29 @@ from build123d import (
     offset,
 )
 from build123d.topology.three_d import Solid
+
+
+def _package_version() -> str:
+    """Installed package version, cross-checked against pyproject.toml.
+
+    The top-cover emboss reads the installed metadata, which an
+    editable install freezes at install time — a stale venv would
+    silently carve the previous version into the lid.  When the
+    source checkout is present, require the two to agree.
+    """
+    from importlib.metadata import version as pkg_version
+    ver = pkg_version("open-spectrograph")
+    pyproject = Path(__file__).parents[1] / "pyproject.toml"
+    if pyproject.is_file():
+        import tomllib
+        with open(pyproject, "rb") as fh:
+            src_ver = tomllib.load(fh)["project"]["version"]
+        if src_ver != ver:
+            raise RuntimeError(
+                f"installed open-spectrograph metadata reports {ver} but "
+                f"pyproject.toml says {src_ver} — stale editable install; "
+                f"rerun `pip install -e . --no-deps`")
+    return ver
 
 
 # ─── Manufacturing constants ──────────────────────────────────────────────
@@ -824,11 +848,7 @@ def build_solid_housing_cad(
         ray_solid = None
 
     # ── Text emboss on top cover surface ─────────────────────────
-    from importlib.metadata import version as pkg_version
-    try:
-        _ver = pkg_version("open-spectrograph")
-    except Exception:
-        _ver = "0.1.0"
+    _ver = _package_version()
 
     _fnum = parts.m1_focal_length_mm / parts.m1_diameter_mm
     _na = 0.5 / _fnum

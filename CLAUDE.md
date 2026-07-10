@@ -50,6 +50,9 @@ designs/                — topology modules (Czerny-Turner variants)
 data/                   — targets TOML, BOM TOMLs, baselines, efficiency CSVs
   BOMs (--bom flag selects which catalog):
     czerny_bom_v0_design.toml         Thorlabs COTS design (default)
+    czerny_bom_v0_asbuilt.toml        Author's build: 25.0/50.0 mm mirror
+                                      blanks, clearances keep OCH floor
+                                      at 29.5 mm (same part keys as design)
     czerny_bom_tl_corrected.toml      Thorlabs COTS corrected CT (test fixture)
     czerny_bom_tl_standard.toml       Thorlabs COTS standard CT
     czerny_bom_tl_oap.toml            Thorlabs COTS OAP CT (procedural CAD tests)

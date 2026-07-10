@@ -492,29 +492,29 @@ def _do_cad(args, design, genome, parts, scene, has_housing, placed, out_dir,
     except Exception as e:
         print(f"[fixture] hasma tap skipped: {e}")
 
-    # Laser alignment screen (standalone STEP)
+    # Laser alignment screen (standalone STEP).  The screen stands on
+    # the common cavity floor; its centerline is the optical-axis
+    # height above that floor (axis at z=0, floor at
+    # shallowest_floor_z).
     try:
-        from optics.mounts_cad import build_laser_alignment_screen
-        import tomllib as _tomllib
-        _bom_p = Path(bom_path) if bom_path else Path("data/czerny_bom_v0_design.toml")
-        with _bom_p.open("rb") as _f:
-            _bom = _tomllib.load(_f)
-        _mfg = _bom["manufacturing"]
-        _bolt_head = float(_mfg["bolts"]["M2"]["head_dia_mm"])
-        _mount0 = _bom["mirrors"]["m1_options"][
-            list(_bom["mirrors"]["m1_options"])[0]]["mount"]
-        _boss_w = _bolt_head + float(_mount0["bolt_safety_mm"])
-        _tongue_w = 2 * float(_mount0["foot_bolt_spacing_mm"]) + _boss_w
-        _fillet_r = float(_mfg["fillet_radius_mm"])
+        from optics.mounts_cad import (build_laser_alignment_screen,
+                                       _load_manufacturing)
+        _mfg = _load_manufacturing()
+        _och = -housing_spec.shallowest_floor_z
+        _mount = parts.m1_mount
+        _head = _mfg.bolt_dims[_mount["foot_bolt_thread"]]["head_dia_mm"]
+        _boss_w = _head + float(_mount["bolt_safety_mm"])
+        _tongue_w = 2 * float(_mount["foot_bolt_spacing_mm"]) + _boss_w
         frame, disk, reticle = build_laser_alignment_screen(
+            centerline_height_mm=_och,
             tongue_notch_width_mm=_tongue_w,
             ridge_width_mm=1.0,
-            corner_fillet_mm=_fillet_r)
+            corner_fillet_mm=_mfg.fillet_radius_mm)
         screen_asm = Compound(children=[frame, disk, reticle])
         screen_asm.label = "laser_alignment_screen"
         screen_path = out_dir / "alignment_screen.step"
         export_step(screen_asm, str(screen_path))
-        print(f"Wrote {screen_path}")
+        print(f"Wrote {screen_path} (centerline {_och:.1f} mm)")
     except Exception as e:
         print(f"[fixture] alignment screen skipped: {e}")
 

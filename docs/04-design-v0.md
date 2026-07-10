@@ -248,13 +248,13 @@ desired.
 
 ## 4.6 Results
 
-A CFL spectrum captured with the assembled v0.5.0 instrument after
+A CFL spectrum captured with the assembled v0.5.1 instrument after
 fine alignment of all four optics.  The mercury emission lines
 are used to perform a quadratic wavelength calibration; a Gaussian fit
 to the isolated Hg 404.7 nm line gives FWHM = 0.50 nm, exceeding the
 sub-1 nm design target.
 
-![CFL spectrum — v0.5.0](figures/fig_6_cfl_spectrum.png)
+![CFL spectrum — v0.5.1](figures/fig_6_cfl_spectrum.png)
 
 ## 4.7 Summary
 

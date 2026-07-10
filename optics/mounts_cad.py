@@ -3638,7 +3638,7 @@ def build_cfl_shade(
 
 def build_laser_alignment_screen(
     *,
-    centerline_height_mm: float = 22.5,
+    centerline_height_mm: float,
     screen_dia_mm: float = 20.0,
     slab_width_mm: float = 25.0,
     slab_thickness_mm: float = 3.0,
@@ -3672,8 +3672,10 @@ def build_laser_alignment_screen(
       standing on the base.
 
     The screen center sits at *centerline_height_mm* above the base
-    bottom.  *mark_gap_mm* is the clearance between the mark ends
-    and both the disk center and rim.
+    bottom — pass the optical-axis height above the cavity floor the
+    screen stands on (``-shallowest_floor_z`` of the housing spec).
+    *mark_gap_mm* is the clearance between the mark ends and both the
+    disk center and rim.
 
     Frame: slab face normal along +Y, base on XZ plane, Z is up.
     """

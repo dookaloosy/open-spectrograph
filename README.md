@@ -3,9 +3,9 @@
 An open-source fiber spectrograph designed by evolutionary algorithm.
 Printable housing, off-the-shelf optics, USB spectral data output.
 
-![v0.4.0 CAD model](figures/fig_4_v0-model.png)
+![v0.5.1 CAD model](figures/fig_4_v0-model.png)
 
-![CFL spectrum — v0.4.0](figures/fig_6_cfl_spectrum.png)
+![CFL spectrum — v0.5.1](figures/fig_6_cfl_spectrum.png)
 
 ## What is this?
 

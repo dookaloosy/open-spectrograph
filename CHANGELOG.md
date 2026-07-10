@@ -5,6 +5,53 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-07-13
+
+Alignment screen centered on optical axis height; as-built BOM
+variant for the author's build; CFL wavelength calibration workflow.
+
+### Added
+- `data/czerny_bom_v0_asbuilt.toml` — BOM variant matching the
+  author's build, which uses 25.0/50.0 mm mirror blanks in place of
+  the 25.4/50.8 mm catalog parts.  Foot clearances compensated so the
+  cavity floor stays 29.5 mm below OCH (M1/F1/grating shared floor,
+  M2 step at 36.4 mm); channel widths and bore contact spacing scaled
+  to diameter.  Same part keys as the design BOM, so the design
+  baseline works unchanged via `--bom`.  The default design BOM
+  retains Thorlabs catalog dimensions for print-and-assemble
+  reproduction.
+- `scripts/cfl_calibrate.py` — CFL wavelength calibration from a
+  capture workbook: Gaussian fits of the six index lines (saturation
+  masking, joint two-Gaussian fit for the 542.4/546.1 blend,
+  core-flank fit for 611.6), quadratic dispersion fit, and chart-safe
+  write-back of constants and centers into the workbook XML.
+- `scripts/cfl_figure.py` — regenerates the fig 6 CFL spectrum figure
+  from the workbook: calibrated wavelength axis, labeled index lines,
+  Hg 404.7 nm Gaussian-fit FWHM inset.  Axes geometry pinned to match
+  the original figure layout.
+
+### Changed
+- Fig 6 regenerated from a 25 ms CFL capture (previously 50 ms) with
+  recalibrated wavelength axis; measured FWHM 0.50 nm at 404.7 nm.
+
+### Fixed
+- Author-build mirror mounts were loose: bores were sized for the
+  25.4/50.8 mm catalog diameters while the build's mirrors are
+  25.0/50.0 mm.  Fixed via the as-built BOM variant; the design BOM
+  is unchanged.
+- Top-cover version emboss read the installed package metadata, which
+  an editable install freezes at install time — version bumps
+  silently carved the previous version into the lid.  The emboss now
+  cross-checks `pyproject.toml` and raises on mismatch, with a
+  reinstall hint (the silent `0.1.0` fallback is removed).
+- Laser alignment screen centerline was a stale hardcoded 22.5 mm; the
+  optical axis sits 29.5 mm above the common cavity floor in v0.  The
+  centerline is now derived from the housing spec
+  (`-shallowest_floor_z`), and `centerline_height_mm` is a required
+  argument of `build_laser_alignment_screen` (no silent default).
+- Screen tongue notch sized from the selected M1 part's mount instead
+  of the first `m1_options` entry.
+
 ## [0.5.0] — 2026-06-23
 
 Roll flexure for cylindrical axis alignment, foot bolt layout rework.

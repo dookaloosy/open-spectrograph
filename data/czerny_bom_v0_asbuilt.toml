@@ -1,0 +1,351 @@
+# Open Spectrograph v0 as-built BOM — modified Czerny-Turner.
+#
+# Variant of czerny_bom_v0_design.toml matching the author's build,
+# which uses 25.0/50.0 mm mirror blanks in place of the 25.4/50.8 mm
+# catalog parts.  Same part keys as the design BOM, so the design
+# baseline works unchanged:
+#
+#   python3 export.py --baseline data/czerny_baseline_v0_design.toml \
+#       --bom data/czerny_bom_v0_asbuilt.toml --cad --step
+#
+# Differences from the design BOM (mount fit only, optics unchanged):
+#   diameter_mm            M1/F1 25.0 (vs 25.4), M2 50.0 (vs 50.8)
+#   foot_clearance_mm      compensated so the cavity floor stays
+#                          29.5 mm below OCH (M2 step at 36.4 mm)
+#   channel_width_mm       scaled to diameter
+#   contact_separation_mm  scaled to diameter
+
+geometry = "czerny"
+
+# ── Global manufacturing parameters ───────────────────────────────────────────
+
+[manufacturing]
+assembly_clearance_mm   = 0.1
+print_tolerance_mm      = 0.1
+fillet_radius_mm        = 2.0
+
+[manufacturing.bolts.M2]
+thread_dia_mm           = 2.0
+head_dia_mm             = 4.0
+clearance_dia_mm        = 2.4
+tap_drill_dia_mm        = 1.6
+
+[manufacturing.bolts."M2.5"]
+thread_dia_mm           = 2.5
+head_dia_mm             = 5.0
+clearance_dia_mm        = 2.7
+tap_drill_dia_mm        = 2.0
+
+[manufacturing.insert]
+insert_part             = "94459A110"
+insert_thread           = "M2"
+insert_bore_dia_mm      = 2.8
+insert_length_mm        = 2.5
+insert_min_material_mm  = 4.0
+insert_chamfer_mm       = 0.5
+insert_flange_dia_mm    = 3.6
+
+# ── Hardware ──────────────────────────────────────────────────────────────────
+
+[hardware."94459A110"]
+description             = "M2 brass heat-set insert for plastic"
+vendor                  = "McMaster-Carr"
+cost_usd                = 0.1946
+
+[hardware."92605A043"]
+description             = "M2×4 18-8 SS flat-tip set screw"
+vendor                  = "McMaster-Carr"
+cost_usd                = 0.4352
+
+[hardware."92605A044"]
+description             = "M2×5 18-8 SS flat-tip set screw"
+vendor                  = "McMaster-Carr"
+cost_usd                = 0.3868
+
+[hardware."92605A912"]
+description             = "M2×8 18-8 SS flat-tip set screw"
+vendor                  = "McMaster-Carr"
+cost_usd                = 0.3208
+
+[hardware."99461A915"]
+description             = "M2×6 Phillips rounded head thread-forming screw"
+vendor                  = "McMaster-Carr"
+cost_usd                = 0.1314
+
+# ── Optics ─────────────────────────────────────────────────────────────────────
+
+# M1 = collimating mirror. Tangential cylindrical, f=100mm.
+# Thorlabs CCM254-100-G01 (1" protected Al concave cylindrical).
+# diameter_mm follows the as-built optic (25.0 mm; catalog nominal 25.4).
+
+[mirrors.m1_options.CCM254-100-G01]
+vendor                  = "Thorlabs"
+focal_length_mm         = 100.0
+diameter_mm             = 25.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 200.82
+center_thickness_mm     = 6.0
+edge_thickness_mm       = 6.4
+mirror_type             = "cylindrical"
+cylindrical_orientation = "tangential"
+off_axis_angle_deg      = 0.0
+
+[mirrors.m1_options.CCM254-100-G01.mount]
+type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
+shoulder_width_mm       = 1.0
+channel_width_mm        = 12.5
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 6.0
+foot_clearance_mm       = 4.00
+pusher_shelf_mm         = 2.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2"
+foot_bolt_spacing_mm    = 5.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 5.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 12.5
+
+# M2 = focusing mirror. Spherical, f=100mm.
+# Thorlabs CM508-100-G01 (2" protected Al concave spherical).
+# diameter_mm follows the as-built optic (50.0 mm; catalog nominal 50.8).
+
+[mirrors.m2_options.CM508-100-G01]
+vendor                  = "Thorlabs"
+focal_length_mm         = 100.0
+diameter_mm             = 50.0
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 137.52
+center_thickness_mm     = 9.0
+edge_thickness_mm       = 10.6
+mirror_type             = "spherical"
+off_axis_angle_deg      = 0.0
+
+[mirrors.m2_options.CM508-100-G01.mount]
+type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
+shoulder_width_mm       = 1.0
+channel_width_mm        = 25.0
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 6.0
+foot_clearance_mm       = 3.40
+pusher_shelf_mm         = 2.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2"
+foot_bolt_spacing_mm    = 10.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 0.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 20.0
+roll_blade_spacing_mm    = 18.0
+roll_pedestal_gap_mm      = 1.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 25.0
+
+# Grating: 600 g/mm, blaze 500nm.
+
+[grating_options.GR25-0605]
+vendor                  = "Thorlabs"
+size_mm                 = 25.0
+edge_thickness_mm       = 6.0
+center_thickness_mm     = 6.0
+groove_density_per_mm   = 600.0
+blaze_nm                = 500.0
+blaze_angle_deg         = 8.627
+peak_efficiency         = 0.684
+type                    = "ruled_reflective"
+cost_usd                = 137.27
+efficiency_file         = "data/efficiency/efficiency_GR25-0605.csv"
+
+[grating_options.GR25-0605.mount]
+type                    = "grating_flexure"
+jaw_clearance_mm        = 3.0
+optic_clearance_mm       = 2.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 15.0
+head_clearance_mm       = 6.0
+foot_clearance_mm       = 4.00
+pusher_shelf_mm         = 2.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2"
+foot_bolt_spacing_mm    = 5.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 5.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
+
+# ── Slit ───────────────────────────────────────────────────────────────────────
+
+[slits]
+width_um                = 25.0
+height_mm               = 0.025
+blade_thickness_mm      = 0.0
+
+[slits.mount]
+type                    = "hasma_direct"
+length_mm               = 9.652
+bore_radius_mm          = 2.87
+# 1/4"-36 UNS-2B: tap drill = 5.5mm (#3 drill), thread cut with tap.
+# thread_tpi / thread_major_dia_mm removed — no printed thread.
+tap_drill_dia_mm        = 5.5
+hex_half_mm             = 4.6
+boundary_mm             = 3.873
+wall_half_mm            = 12.5
+
+[slits.entrance_options.HASMA]
+type                    = "fiber_adapter_sma"
+vendor                  = "Thorlabs"
+aperture_diameter_um    = 25.0
+adapter_length_mm       = 9.0
+cost_usd                = 10.04
+
+[source]
+type                    = "tungsten_halogen"
+
+# ── Housing ───────────────────────────────────────────────────────────────────
+
+[housing]
+wall_albedo             = 0.05
+density_g_per_cm3       = 1.24
+infill_fraction         = 0.15
+cost_per_gram_usd       = 0.02
+
+[housing.parts.solid_housing]
+description             = "3D printed black plastic housing"
+vendor                  = "manufactured"
+qty                     = 1
+
+[housing.parts.top_cover]
+description             = "3D printed black plastic top cover"
+vendor                  = "manufactured"
+qty                     = 1
+
+[housing.parts.detector_cover]
+description             = "3D printed black plastic detector cover"
+vendor                  = "manufactured"
+qty                     = 1
+
+[housing.parts.bottom_cover]
+description             = "3D printed black plastic bottom cover"
+vendor                  = "manufactured"
+qty                     = 1
+
+[housing.parts.flexure_mount]
+description             = "3D printed black plastic flexure mount"
+vendor                  = "manufactured"
+
+# ── Detector ──────────────────────────────────────────────────────────────────
+# Pin 1 (notch) of the TCD1304 is the short-wavelength (blue) end.
+# In the KiCad STEP, pin 1 is at +X (signal-processing end of the board).
+
+[detector]
+part_number             = "TCD1304AP"
+board                   = "TCD1304_SPI_Rev2EB"
+vendor                  = "drmcnelson"
+cost_usd                = 110.00
+type                    = "linear_ccd"
+n_pixels                = 3648
+pixel_pitch_um          = 8.0
+pixel_height_um         = 200.0
+array_length_mm         = 29.184
+package_width_mm        = 41.6
+package_height_mm       = 10.16
+glass_to_die_mm         = 1.7
+board_width_mm          = 70.0
+board_height_mm         = 40.0
+board_behind_die_mm     = 21.5
+boundary_behind_die_mm  = 6.2
+insert_spacing_width_mm = 62.0
+insert_spacing_height_mm = 32.0
+solder_clearance_depth_mm = 3.0
+corner_boss_radius_mm   = 2.5
+fixed_grating           = true
+pixel_window            = 200
+
+[controller]
+board                   = "Controller_T4_R3EB"
+vendor                  = "drmcnelson"
+cost_usd                = 90.00
+board_width_mm          = 72.0
+board_height_mm         = 55.0
+board_thickness_mm      = 1.6
+component_height_mm     = 12.8
+solder_protrusion_mm    = 3.0
+insert_spacing_width_mm = 64.0
+insert_spacing_height_mm = 47.0
+solder_clearance_depth_mm = 3.0
+corner_boss_radius_mm   = 2.5
+
+# ── Fold mirror ───────────────────────────────────────────────────────────────
+# Thorlabs CCM254-025-G01 (1" protected Al concave cylindrical, f=25mm).
+# Sagittal orientation — corrects sagittal defocus from off-axis M1/M2.
+# diameter_mm follows the as-built optic (25.0 mm; catalog nominal 25.4).
+
+[mirrors.f1_options.CCM254-025-G01]
+vendor                  = "Thorlabs"
+mirror_type             = "cylindrical"
+cylindrical_orientation = "sagittal"
+focal_length_mm         = 25.0
+diameter_mm             = 25.0
+center_thickness_mm     = 6.0
+edge_thickness_mm       = 7.6
+reflectance             = 0.90
+reflectance_file        = "data/efficiency/reflectance_protected_al_12deg.csv"
+cost_usd                = 200.82
+
+[mirrors.f1_options.CCM254-025-G01.mount]
+type                    = "mirror_flexure"
+optic_clearance_mm       = 2.0
+shoulder_width_mm       = 1.0
+channel_width_mm        = 12.5
+channel_extension_mm    = 1.0
+wall_margin_mm          = 2.0
+head_clearance_mm       = 6.0
+foot_clearance_mm       = 4.00
+pusher_shelf_mm         = 2.0
+rear_wall_mm            = 3.0
+foot_thickness_mm       = 5.0
+foot_bolt_thread        = "M2"
+foot_bolt_spacing_mm    = 5.0
+bolt_safety_mm          = 2.0
+front_bolt_offset_mm    = 5.0
+pitch_flexure_thickness_mm    = 1.60
+pitch_flexure_gap_mm          = 1.0
+trim_angle_deg          = 2.0
+roll_flexure_height_mm   = 5.0
+roll_blade_thickness_mm   = 0.80
+roll_insert_spacing_mm   = 10.0
+roll_blade_spacing_mm    = 8.0
+roll_pedestal_gap_mm      = 1.0
+contact_radius_mm       = 1.5
+contact_offset_mm       = 1.0
+contact_separation_mm   = 12.5
