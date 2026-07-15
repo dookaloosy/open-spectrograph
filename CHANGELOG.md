@@ -5,6 +5,80 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-07-14
+
+Native instrument control: `controller`, a standalone client for the
+TCD1304 detector (desktop application + CLI), stateless CFL wavelength
+calibration, and a new paper section describing the software.
+
+### Added
+- `controller` package — clean-room client for the TCD1304 detector
+  (drmcnelson firmware); no upstream host software required.  Bare
+  `controller` launches the desktop application: live spectrum on the
+  calibrated wavelength axis, capture with provenance headers
+  (firmware identity, coefficients, acquisition mode, clearing pulses,
+  exposure), and a live calibration panel — every frame receives the
+  full pattern-locate + line fit, with per-line table, old/new
+  coefficient table, RMS, live 404.7 nm FWHM readout, and a transient
+  "no lock" state that recovers on the next good frame.  Store writes
+  the latest locked fit to the device and verifies by readback.
+  Subcommands (`capture`, `calibrate`, `plot`, `info`, `ports`,
+  `store`, `erase`) expose the same library for scripting and offline
+  reprocessing.  Captures default into `output/`.
+- Acquisition policy from bench characterization (2026-07-13/14):
+  PIT + 20 clearing pulses at ≥ 16 ms exposure (ghost-free
+  quantitative default; the firmware validates its own 16 ms floor at
+  the recommended sensor clock), automatic switch to PLM below, with
+  the PLM interval floored at the ~15 ms pixel readout time.  The
+  recommended sensor clock is set on every connect — it repaired a
+  runtime-corrupted stepped baseline (8k/15k ADU) and makes the
+  firmware reject bad timing instead of crashing.  PLM photometric
+  caveats documented: sub-4 kADU signals read low (~30% per ms of
+  inter-frame idle) and bright lines leave a signal-adjacent
+  background excess (to ~+2 kADU) — bright-line mode only.
+- Stateless wavelength calibration: `data/cfl_lines.toml` declares
+  reference wavelengths and nominal dispersion only.  A pattern
+  locator finds the six CFL lines from scratch each run (any shift,
+  ±25% dispersion, blend-must-be-bright guard against mirrored false
+  locks), so calibration survives arbitrary drift and never writes
+  state back to the repo.
+- USB drop recovery: automatic reconnect loop; a Reconnect button
+  appears beside the device indicator on disconnect, and (under WSL
+  only, on explicit press) re-attaches a device that left WSL via
+  usbipd.
+- Paper section 4 "Instrument Control Software" (`docs/04-software.md`),
+  inserted before the v0 design section (now `docs/05-design-v0.md`,
+  section 5).  GUI screenshot as figure 4; previous figures 4–6
+  renumbered 5–7.  Boxed `\ui{…}` convention for UI control names.
+- 27 controller tests against a simulated device that replays
+  bench-verified wire behavior, plus two real CFL capture fixtures in
+  `tests/data/` (documented there) anchoring format compatibility and
+  the known-good calibration constants.
+
+### Changed
+- PySide6/pyqtgraph are core dependencies; the desktop application is
+  the primary tool (the `[gui]` extra is gone, `pyserial` added).
+- Pitch flexure webs 1.60 → 2.40 mm on F1, M1, and the grating (both
+  BOMs) for stiffer pitch retention; M2 stays at 1.60 mm — 2.40 mm is
+  too stiff for its pusher setscrew to move.
+- `cfl_shade` enlarged for the bulb: inner diameter 65 → 105 mm
+  (+20 mm radial clearance), height 135 → 155 mm (+20 mm axial);
+  outer diameter 115 mm, inside the 120 mm print envelope.
+- `scripts/cfl_calibrate.py` is a thin wrapper over the `controller`
+  library; the workbook path derives its dispersion from the sheet's
+  own line list.
+
+### Fixed
+- CLI live-calibration exposure ladder steps down only on
+  clipped/starved fit windows; any other fit failure aborts instead of
+  walking into the crash-prone short-exposure regime.
+- Captures written by `controller` are readable by the TCD1304 repo's
+  `DataReader.py`: header string values are now quoted Python literals
+  (the reader exec()s each header line) and a `# header end` sentinel
+  is emitted before the frame blocks (the reader needs it to start
+  frame parsing).  Validated by plotting a capture with the upstream
+  tooling, including its wavelength axis from our coefficients header.
+
 ## [0.5.1] — 2026-07-13
 
 Alignment screen centered on optical axis height; as-built BOM

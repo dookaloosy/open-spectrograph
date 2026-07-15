@@ -6,6 +6,8 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
+% boxed names for interactive UI controls (buttons, fields)
+\newcommand{\ui}[1]{{\setlength{\fboxsep}{2pt}\fbox{\footnotesize\textsf{#1}}}}
 \usepackage{longtable}
 \usepackage{array}
 \usepackage[dvipsnames]{xcolor}
@@ -225,9 +227,11 @@ Section~\ref{sec:simulation} we describe the simulation framework that
 implements these principles: the layout-independent scene
 representation, raysect-based forward ray tracing, custom optical
 materials, and the evolutionary optimization loop.
-Subsequent sections present concrete designs --- the specific optical
-trains, part selections, and engineering tradeoffs --- and evaluate
-each against the design targets.
+Section~\ref{sec:software} presents the instrument control software
+that acquires, calibrates, and records spectra from the assembled
+instrument.  Subsequent sections present concrete designs --- the
+specific optical trains, part selections, and engineering tradeoffs
+--- and evaluate each against the design targets.
 
 \newpage
 %% ===================================================================
@@ -1012,6 +1016,190 @@ profile with FWHM, and sagittal profile.}
 
 \clearpage
 %% ===================================================================
+\section{Instrument Control Software}
+\label{sec:software}
+%% ===================================================================
+
+\textit{We describe \texttt{controller}, our client for the TCD1304
+detector: a desktop application for live viewing, capture, and
+wavelength calibration, with a command-line layer for scripting and
+offline reprocessing.  The instrument requires drmcnelson's open
+firmware \cite{tcd1304board} on its Teensy controller board; beyond
+that, \texttt{controller} handles everything on the host.}
+
+\subsection{Architecture}
+
+Running \texttt{controller} with no arguments launches the desktop
+application, the primary tool.  Subcommands expose the same
+underlying library for scripting and for reprocessing saved captures,
+and the library itself is importable for custom analysis.  A single
+worker thread owns the serial port, so only one client can talk to
+the instrument at a time.
+
+\subsection{Acquisition}
+\label{sec:acquisition}
+
+The firmware operates the sensor in two timing modes
+\cite{tcd1304board}.  In periodic interrupt timer (PIT) or ``single
+pulse'' mode, the exposure time sets the frame interval and frames
+arrive back to back; exposure has no practical upper limit.
+In pulse-loop mode (PLM), the firmware collects fast frame sets with
+exposures down to microseconds and clears residual charge internally
+between frames; the frame interval must cover the readout plus the
+exposure.
+\texttt{controller} selects the mode automatically
+(Table~\ref{tab:acq-modes}).
+
+\begin{table}[ht]
+\centering
+\caption{Acquisition modes.}
+\label{tab:acq-modes}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Mode & Exposure & Character \\
+\midrule
+PIT + clearing & $\geq 16$\,ms & ghost-free; the default for
+quantitative work \\
+PLM & 1--15\,ms & bright-line regime only (see text) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\texttt{controller} handles the firmware's quirks automatically: it
+runs the clearing engine in PIT mode (frames otherwise carry a
+residual ghost charge), pads PLM frame intervals to crash-safe
+values, discards the contaminated leading frames of every read, and
+sets the recommended sensor clock on every connect.  One caveat: PLM
+sacrifices photometric fidelity at short exposures (weak signals read
+low and backgrounds are not flat), so we suggest using it as a
+bright-line mode and recommend doing quantitative work in PIT.
+
+\subsection{Calibration}
+\label{sec:calibration}
+
+We calibrate against six index lines of an ordinary compact
+fluorescent lamp (Table~\ref{tab:cfl-lines}), listed in
+\texttt{data/cfl\_lines.toml} as reference wavelengths plus the
+nominal dispersion.
+
+\begin{table}[ht]
+\centering
+\caption{CFL wavelength calibration index lines.}
+\label{tab:cfl-lines}
+\small
+\begin{tabular*}{0.85\textwidth}{@{\extracolsep{\fill}}lll@{}}
+\toprule
+Wavelength (nm) & Species & Fit \\
+\midrule
+404.656 & Hg & single Gaussian \\
+435.833 & Hg & single Gaussian \\
+542.4   & Tb$^{3+}$ & joint two-Gaussian (blend) \\
+546.074 & Hg & joint two-Gaussian (blend) \\
+611.6   & Eu$^{3+}$ & core-weighted, fixed baseline \\
+631.3   & Eu$^{3+}$ & single Gaussian \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+A pattern locator finds the six lines from scratch on each run (any
+shift, $\pm 25$\% of nominal dispersion), saturation-masked Gaussian
+fits refine each peak center, and a quadratic fit to the six centers
+yields the wavelength solution $\lambda(p) = a_0 + a_1 p + a_2 p^2$.
+
+\subsection{Interfaces}
+
+\subsubsection{Desktop application}
+
+The desktop application presents one window
+(Figure~\ref{fig:controller-gui}, controls in
+Table~\ref{tab:gui-controls}): a set of controls along the top row
+drives live spectral acquisition, and \ui{Capture to file} saves the
+current acquisition.
+Captures use the \texttt{.tcd1304} plain-text format
+\cite{tcd1304board}; \texttt{controller} extends the header with the
+firmware identifier, stored wavelength coefficients, acquisition
+mode, clearing pulse count, and exposure, so anyone can audit the
+photometric regime of a file after the fact.
+
+Clicking \ui{Calibrate\ldots} opens the live calibration panel, where every frame receives the line location
+and fit of Section~\ref{sec:calibration} and the fitted coefficients
+update on screen.  \ui{Store to device} writes the latest fit and
+verifies it by readback; \ui{Cancel} or \ui{$\times$} closes the
+panel without saving.
+
+If the USB connection drops, the application retries automatically;
+if the retries fail, pressing the \ui{Reconnect} button beside the
+device indicator re-establishes the connection.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_4_controller_gui.png}
+\caption{The \texttt{controller} desktop application showing a live
+CFL spectrum (25\,ms exposure, PIT mode).}
+\label{fig:controller-gui}
+\end{figure}
+
+\begin{table}[ht]
+\centering
+\caption{Desktop application controls.}
+\label{tab:gui-controls}
+\small
+\begin{tabular}{@{}lp{11cm}@{}}
+\toprule
+Control & Function \\
+\midrule
+\ui{Pause} / \ui{Resume} & freeze or resume the live view \\
+Metrics readout & per-frame baseline, clipped pixels, maximum,
+display rate \\
+\ui{Exposure} & exposure time; automatically selects the
+acquisition mode (PIT or PLM) \\
+\ui{Frames} & frames per capture, and per averaged update when
+averaging is on \\
+\ui{Avg on} / \ui{Avg off} & toggle averaging of the live view
+over the frame count \\
+\ui{Capture to file} & write the current acquisition to a
+\texttt{.tcd1304} file in \texttt{output/} \\
+\ui{Calibrate\ldots} & open the live calibration panel \\
+Status bar & shows connection indicator, firmware identity, status
+messages \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Command-line interface}
+
+\texttt{controller} also exposes a command-line interface with
+subcommands to support scripting and offline work
+(Table~\ref{tab:controller-cli}).
+
+\begin{table}[ht]
+\centering
+\caption{\texttt{controller} command-line interface.}
+\label{tab:controller-cli}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Command & Function \\
+\midrule
+\texttt{controller capture} & acquire clean frames to a
+\texttt{.tcd1304} file \\
+\texttt{controller calibrate} & fit lines and constants (saved file
+or \texttt{-{}-live}) \\
+\texttt{controller plot} & plot a capture on its recorded wavelength
+axis \\
+\texttt{controller info} & report firmware version, configuration,
+coefficients, temperature \\
+\texttt{controller ports} & list the serial devices the host can
+see \\
+\texttt{controller store} / \texttt{erase} & manage on-device
+coefficients \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+%% ===================================================================
 \section{The v0 Design}
 \label{sec:v0-design}
 %% ===================================================================
@@ -1022,8 +1210,8 @@ prototype.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{figures/fig_4_v0-model.png}
-\caption{CAD model of the v0.5.1 assembly.}
+\includegraphics[width=\linewidth]{figures/fig_5_v0-model.png}
+\caption{CAD model of the v0.6.0 assembly.}
 \label{fig:v0-model}
 \end{figure}
 
@@ -1098,8 +1286,8 @@ wider layout with higher residual aberrations at the band edges.
 
 \begin{figure}[ht!]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_5a_v0_spot_pt.png}\\[0.5em]
-\includegraphics[width=\textwidth]{figures/fig_5b_v0_spot_ext.png}
+\includegraphics[width=\textwidth]{figures/fig_6a_v0_spot_pt.png}\\[0.5em]
+\includegraphics[width=\textwidth]{figures/fig_6b_v0_spot_ext.png}
 \caption{v0 spot diagrams at 400, 550, and 700\,nm.  Each panel shows a
 wavelength pair separated by $\Delta\lambda = 0.5$\,nm (green and
 blue).  Top: point source (optical aberrations only).  Bottom:
@@ -1317,10 +1505,11 @@ sharp spectral lines such as a compact fluorescent lamp (CFL).  Tune
 the pitch flexures of each optic until maximum intensity is achieved;
 set the roll flexures
 of F1, M1, and the grating until the lines are sharpest.  Once
-satisfied, calibrate the spectrum by mapping known peak wavelengths to
-their detector channel positions; a linear or quadratic fit can be used
-to extract fit coefficients that can be saved in the TCD1304 controller
-memory.
+satisfied, run the wavelength calibration of
+Section~\ref{sec:calibration} (\texttt{controller calibrate -{}-live
+-{}-store}, or the Calibrate panel in \texttt{controller gui}); the
+fitted quadratic constants are stored in the TCD1304 controller memory
+and verified by readback.
 
 \subsubsection{Finish assembly}
 Secure the top, bottom, and detector covers using self-tapping screws.
@@ -1332,16 +1521,16 @@ desired.
 \subsection{Results}
 
 Figure~\ref{fig:cfl-spectrum} shows a CFL spectrum captured with the
-assembled v0.5.1 instrument after fine alignment of all four
+assembled instrument after fine alignment of all four
 optics.  The mercury emission lines are used to perform a quadratic
-wavelength calibration; a Gaussian fit to the isolated Hg\,404.7\,nm
-line gives
+wavelength calibration (Section~\ref{sec:calibration}); a Gaussian fit
+to the isolated Hg\,404.7\,nm line gives
 FWHM~$= 0.50$\,nm, exceeding the sub-1\,nm design target.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_6_cfl_spectrum.png}
-\caption{CFL spectrum captured with the v0.5.1 spectrograph.  25\,ms
+\includegraphics[width=\textwidth]{figures/fig_7_cfl_spectrum.png}
+\caption{CFL spectrum captured with the assembled spectrograph.  25\,ms
 exposure, single frame, 25\,$\mu$m SMA-905 fiber input.
 Inset: Gaussian fit to the Hg\,404.7\,nm line.}
 \label{fig:cfl-spectrum}

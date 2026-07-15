@@ -47,6 +47,8 @@ at 404.7 nm, <$500 BOM target. Design wavelength 550 nm.
 optics/                 — core library (scene, ray tracing, fitness, housing)
 optics/elements/        — custom raysect materials (mirrors, grating, recorder)
 designs/                — topology modules (Czerny-Turner variants)
+controller/             — TCD1304 detector client (desktop app + CLI;
+                          `controller` launches the app)
 data/                   — targets TOML, BOM TOMLs, baselines, efficiency CSVs
   BOMs (--bom flag selects which catalog):
     czerny_bom_v0_design.toml         Thorlabs COTS design (default)
@@ -73,7 +75,8 @@ tests/                  — unit tests (assert-based validation)
 scripts/                — diagnostic and analysis utilities
 open-spectrograph.tex   — paper (LaTeX, self-contained)
 docs/                   — paper section sources (01-introduction,
-                          02-design-principles, 03-simulation, 04-design-v0)
+                          02-design-principles, 03-simulation,
+                          04-software, 05-design-v0)
 ```
 
 ## Quick Reference
@@ -96,6 +99,11 @@ python3 export.py --run output/optim_<run_dir> --render
 python3 export.py --baseline data/czerny_baseline_v0_design.toml --layout
 python3 export.py --baseline data/czerny_baseline_v0_design.toml --cad --step
 # --cad generates bom.csv, alignment_screen.step, fixtures, mounts
+
+# Instrument control (desktop app; subcommands for scripting)
+controller
+controller capture -e 25ms -n 4          # -> output/capture.<stamp>.tcd1304
+controller calibrate <capture>.tcd1304
 
 # Tests
 python3 -m pytest tests/
@@ -143,11 +151,21 @@ python3 scripts/beam_profile.py --run output/optim_<run_dir>
   short-wavelength (blue) end. In the KiCad STEP, pin 1 is at +X;
   `place_in_scene_frame` maps STEP +X to raysect local +x.
 
+- **Acquisition modes**: PIT + 20 clearing pulses at >=16 ms exposure
+  (quantitative default; firmware validates its own floor), automatic
+  PLM below with the interval floored at the ~15 ms readout.  The
+  recommended sensor clock is set on every connect.  PLM is
+  bright-line only (sub-knee signals read low; background not flat).
+- **Calibration is stateless**: `data/cfl_lines.toml` holds reference
+  wavelengths + nominal dispersion only; the pattern locator finds
+  line positions from scratch each run and nothing writes back.
+
 ## Where to find deeper context
 
 - Optical theory and design principles: `docs/02-design-principles.md`
 - Simulation architecture: `docs/03-simulation.md`
-- v0 design (Thorlabs COTS): `docs/04-design-v0.md`
+- Instrument control software (`controller` app + CLI): `docs/04-software.md`
+- v0 design (Thorlabs COTS): `docs/05-design-v0.md`
 
 ## Sibling repos
 

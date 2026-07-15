@@ -3,9 +3,9 @@
 An open-source fiber spectrograph designed by evolutionary algorithm.
 Printable housing, off-the-shelf optics, USB spectral data output.
 
-![v0.5.1 CAD model](figures/fig_4_v0-model.png)
+![v0.6.0 CAD model](figures/fig_5_v0-model.png)
 
-![CFL spectrum — v0.5.1](figures/fig_6_cfl_spectrum.png)
+![CFL spectrum](figures/fig_7_cfl_spectrum.png)
 
 ## What is this?
 
@@ -58,6 +58,28 @@ python scripts/spot_panel.py --baseline data/czerny_baseline_v0_design.toml
 ./build_paper.sh
 ```
 
+## Operating the instrument
+
+`controller` (installed by the bootstrap) is the desktop application
+and CLI for the TCD1304 detector: live spectrum, capture with
+provenance headers, and live wavelength calibration against a CFL
+lamp.
+
+```bash
+controller                        # desktop app (the primary tool)
+controller capture -e 25ms -n 4   # scripted capture -> output/
+controller calibrate output/capture.<stamp>.tcd1304   # offline recalibration
+```
+
+![controller desktop application](figures/fig_4_controller_gui.png)
+
+The detector electronics and firmware are
+[drmcnelson's open-source projects](https://github.com/drmcnelson/TCD1304-Sensor-Device-with-Linear-Response-and-16-Bit-Differential-ADC);
+the instrument requires his firmware on the Teensy controller board.
+`controller` is an independent, MIT-licensed client written against
+the firmware's documented serial interface — no upstream host
+software is needed.
+
 ## Documentation
 
 The full design narrative is in the paper (`open-spectrograph.tex`).
@@ -67,7 +89,8 @@ Section sources in `docs/`:
 - [Introduction](docs/01-introduction.md)
 - [Design Principles](docs/02-design-principles.md)
 - [Simulation](docs/03-simulation.md)
-- [v0 Design (Thorlabs COTS)](docs/04-design-v0.md)
+- [Instrument Control Software](docs/04-software.md)
+- [v0 Design (Thorlabs COTS)](docs/05-design-v0.md)
 
 ## License
 

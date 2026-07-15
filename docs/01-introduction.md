@@ -79,6 +79,8 @@ constrain the optimization: the instrument line function, dispersion
 relations, geometrical throughput factors, and aberration theory.
 Section 3 describes the simulation framework: scene representation,
 forward ray tracing, and the evolutionary optimization loop.
+Section 4 presents the instrument control software that acquires,
+calibrates, and records spectra from the assembled instrument.
 Subsequent sections present concrete designs --- the specific optical
 trains, part selections, and engineering tradeoffs --- and evaluate
 each against the design targets.

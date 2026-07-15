@@ -1,4 +1,4 @@
-"""Generate figures/fig_6_cfl_spectrum.png from a captured CFL spectrum.
+"""Generate figures/fig_7_cfl_spectrum.png from a captured CFL spectrum.
 
 Reads the spectrum workbook produced during calibration:
   Sheet1  — pixel / wavelength / counts, with the quadratic calibration
@@ -25,7 +25,7 @@ from scipy.optimize import curve_fit
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_XLSX = (REPO / "output" / "export_czerny_baseline_v0_design"
                 / "cfl_spectrum.xlsx")
-OUT_PNG = REPO / "figures" / "fig_6_cfl_spectrum.png"
+OUT_PNG = REPO / "figures" / "fig_7_cfl_spectrum.png"
 
 HG_LINE_NM = 404.656          # inset line (isolated, unsaturated)
 INSET_XLIM = (401.0, 409.0)   # inset x-range (nm)

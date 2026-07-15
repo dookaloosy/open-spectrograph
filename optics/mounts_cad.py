@@ -3598,8 +3598,8 @@ def build_laser_alignment_holder(
 
 def build_cfl_shade(
     *,
-    inner_dia_mm: float = 65.0,
-    height_mm: float = 135.0,
+    inner_dia_mm: float = 105.0,  # bulb ~65 mm + 20 mm radial clearance
+    height_mm: float = 155.0,     # +20 mm axial clearance
     wall_mm: float = 5.0,
     cap_mm: float = 5.0,
     tap_drill_dia_mm: float = 5.5,

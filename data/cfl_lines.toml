@@ -1,0 +1,11 @@
+# CFL calibration index lines: reference wavelengths only.  Pixel
+# positions are found at calibration time by the pattern locator
+# (controller.calibrate.locate_lines); calibration never writes to
+# this file.
+#
+# dispersion_nm_per_px is the nominal design dispersion (600 g/mm
+# grating, f = 100 mm focuser, 8 um pixels; blue at high pixel index,
+# hence the sign).  The locator tolerates +-25% around it.
+dispersion_nm_per_px = -0.117
+
+wavelengths_nm = [404.656, 435.833, 542.4, 546.074, 611.6, 631.3]

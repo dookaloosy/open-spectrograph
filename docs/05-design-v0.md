@@ -1,8 +1,8 @@
-# 4. The v0 Design
+# 5. The v0 Design
 
 *We present a catalog-parts build that validates the simulation pipeline end-to-end and provides the fastest path to a physical prototype.*
 
-## 4.1 Optical train
+## 5.1 Optical train
 
 The v0 optical train is an aberration-corrected Czerny-Turner with a
 tangential cylindrical collimator (M1), sagittal cylindrical collimator
@@ -56,7 +56,7 @@ mirrors, and the shortest available focal length is f = 25 mm
 geometry, forcing the optimizer into steeper incidence angles and a
 wider layout with higher residual aberrations at the band edges.
 
-## 4.2 Performance
+## 5.2 Performance
 
 |  | Point source | | 25 µm fiber | |
 |---|---|---|---|---|
@@ -66,10 +66,10 @@ wider layout with higher residual aberrations at the band edges.
 | 700 | 58.5 | 0.73 | 63.3 | 0.85 |
 | Mean | 39.9 | 0.59 | 47.0 | 0.70 |
 
-Figure 4 shows the v0 spot diagrams: point source (top) and 25 µm
+Figure 6 shows the v0 spot diagrams: point source (top) and 25 µm
 fiber source (bottom).
 
-## 4.3 Assembly tolerance budget
+## 5.3 Assembly tolerance budget
 
 A true one-at-a-time (OAT) sweep perturbs each physical dimension
 independently — angular tilts ±2°, layout distances ±5% — without
@@ -105,7 +105,7 @@ deviation. The grating incidence angle α, fold angle θ\_F1, and
 detector tilt θ\_D are relaxed and do not require special attention
 during assembly.
 
-## 4.4 Printable parts
+## 5.4 Printable parts
 
 All printable parts are generated procedurally from BOM parameters
 and exported with:
@@ -120,7 +120,7 @@ gyroid infill.  Optic mounts were printed on their backs (foot pointing up).
 Supports were enabled for the alignment screen, housing, and bottom cover;
 a PLA support interface was used for PETG parts for ease of support removal.
 
-### 4.4.1 Housing and mounts
+### 5.4.1 Housing and mounts
 
 | Part | File | Material | Notes |
 |------|------|----------|-------|
@@ -149,7 +149,7 @@ between the blades.  Roll adjustment is actuated by a pair of M2
 setscrews through heat-set inserts in the foot, pushing against the
 pedestal lower surface.
 
-### 4.4.2 Assembly fixtures
+### 5.4.2 Assembly fixtures
 
 | Fixture | File | Purpose |
 |---------|------|---------|
@@ -175,9 +175,9 @@ multi-color print (frame, white disk, black reticle) that straddles the
 mount foot tongue and sits at the optic vertex plane, providing a
 centering target for aligning each optic before the housing is sealed.
 
-## 4.5 Assembly procedure
+## 5.5 Assembly procedure
 
-### 4.5.1 Prepare housing
+### 5.5.1 Prepare housing
 
 Use the HASMA tap fixture to guide a 1/4"-36 tap during the tapping
 process.  Slowly rotate the tap in the bore until the thread is
@@ -190,7 +190,7 @@ locking nut.  When a fiber ferrule is inserted, it should be flush
 with the inner wall of the housing; fine-tune the adapter position
 accordingly to achieve this.
 
-### 4.5.2 Prepare mounts
+### 5.5.2 Prepare mounts
 
 Install the heat-set inserts into the optic mounts using a hot iron,
 pushing each insert until it is slightly inset into the plastic; exact
@@ -199,7 +199,7 @@ retention insert at the top of each mount, 5 mm set screws for the
 pitch flexure pusher inserts, and 8 mm set screws for the roll flexure
 pusher inserts.
 
-### 4.5.3 Install boards
+### 5.5.3 Install boards
 
 Install the detector board so that the notch on the TCD1304 package
 (pin 1) is on the far (blue) side, away from the grating.  Insert the
@@ -208,7 +208,7 @@ before securing the board with self-tapping screws.  Then install the
 controller board with the USB connector facing the outside edge; also
 insert the cables before securing with self-tapping screws.
 
-### 4.5.4 Mount optics
+### 5.5.4 Mount optics
 
 Place each optic into its mount and tighten the retaining set screw to
 secure the optic, paying particular attention to the axial orientations
@@ -217,7 +217,7 @@ the mirrors during this process.  The grating should be installed with
 the blaze direction pointing toward the detector; this is usually
 indicated with an arrow on the side of the grating.
 
-### 4.5.5 Install optics
+### 5.5.5 Install optics
 
 Install each mounted optic in the housing, taking care to seat each
 mount foot in the locating ridges before securing with self-tapping
@@ -226,19 +226,19 @@ input fiber and use the alignment screen to set the pitch flexure of
 each optic in turn; the laser spot should be centred vertically on the
 screen after reflecting from each optical element.
 
-### 4.5.6 Align optics
+### 5.5.6 Align optics
 
 With the top lid on, capture a live spectrum of a light source with
 sharp spectral lines such as a compact fluorescent lamp (CFL).  Tune
 the pitch flexures of each optic until maximum intensity is achieved;
 set the roll flexures
 of F1, M1, and the grating until the lines are sharpest.  Once
-satisfied, calibrate the spectrum by mapping known peak wavelengths to
-their detector channel positions; a linear or quadratic fit can be used
-to extract fit coefficients that can be saved in the TCD1304 controller
-memory.
+satisfied, run the wavelength calibration of Section 4.3
+(`controller calibrate --live --store`, or the Calibrate panel in
+`controller gui`); the fitted quadratic constants are stored in the
+TCD1304 controller memory and verified by readback.
 
-### 4.5.7 Finish assembly
+### 5.5.7 Finish assembly
 
 Secure the top, bottom, and detector covers using self-tapping screws.
 Note that the housing can deform under load, so refrain from excessive
@@ -246,17 +246,17 @@ tightening to avoid spectral shifts.  A spectrum should still be
 acquired after closing up, to validate the assembly and recalibrate if
 desired.
 
-## 4.6 Results
+## 5.6 Results
 
-A CFL spectrum captured with the assembled v0.5.1 instrument after
+A CFL spectrum captured with the assembled instrument after
 fine alignment of all four optics.  The mercury emission lines
-are used to perform a quadratic wavelength calibration; a Gaussian fit
-to the isolated Hg 404.7 nm line gives FWHM = 0.50 nm, exceeding the
-sub-1 nm design target.
+are used to perform a quadratic wavelength calibration (Section 4.3);
+a Gaussian fit to the isolated Hg 404.7 nm line gives
+FWHM = 0.50 nm, exceeding the sub-1 nm design target.
 
-![CFL spectrum — v0.5.1](figures/fig_6_cfl_spectrum.png)
+![CFL spectrum](figures/fig_7_cfl_spectrum.png)
 
-## 4.7 Summary
+## 5.7 Summary
 
 | Metric | Target | Achieved | Notes |
 |--------|--------|----------|-------|
